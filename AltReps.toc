@@ -1,0 +1,12 @@
+## Interface: 80205
+## Title: AltReps
+## Notes: Tracks Reputations for all your characters
+## Author: Eylwen
+## Version: 0.0.1
+## SavedVariables: AltRepsDB
+## OptionalDeps: Ace3
+## X-Embeds: Ace3
+
+libs.xml
+
+Core.lua
