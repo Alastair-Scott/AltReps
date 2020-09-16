@@ -271,11 +271,16 @@ local options = {
             addon.icon:Refresh(addonName)
           end,
         },
+        GeneralHeader = {
+          order = 4,
+          type = "header",
+          name = "Advanced settings",
+        },
         Debug = {
           type = "toggle",
           name = "Debug",
           desc = "Enable debug mode",
-          order = 4,
+          order = 5,
           get = function(info) return core.db.Options.Debug end,
           set = function(info, value)
             core.db.Options.Debug = value
@@ -307,6 +312,19 @@ local options = {
         },
       },
     },
+    Characters = {
+      order = 2,
+      type = "group",
+      name = "Character settings",
+      cmdHidden = true,
+      args = {
+        CharactersHeader = {
+          type = "header",
+          order = 100,
+          name = "Characters"
+        },
+      },
+    },
   },
 }
 
@@ -315,21 +333,25 @@ function core:OnInitialize()
   addon.version = versionString
 
   AltRepsDB = AltRepsDB or defaultDB
-
+  
   if not AltRepsDB.DBVersion or AltRepsDB.DBVersion < 1 then
     AltRepsDB = defaultDB
   elseif AltRepsDB.DBVersion < 3 then
     AltRepsDB.Window = defaultDB.Window
     AltRepsDB.Options = defaultDB.Options
     AltRepsDB.Factions = defaultDB.Factions
+    for _, toon in pairs(AltRepsDB.Toons) do
+      if toon and toon.Show == nil then
+        toon.Show = true
+      end
+    end
     AltRepsDB.DBVersion = 3
   end
 
   core.db = AltRepsDB
-
-  core:BuildOptions()
   
   core:ToonInit()
+  core:BuildOptions()
 
   addon.dataobject = addon.LDB and addon.LDB:NewDataObject("AltReps", {
     text = "AR",
@@ -360,15 +382,14 @@ function core:OnEnable()
     if bagId and slotId then
       debug("Chest clicked: (BagId: " .. (bagId or "Unknown") .. ", SlotId: " .. (slotId or "Unknown") .. ")")
       local itemId =  GetContainerItemID(bagId, slotId)
-      debug("Chest clicked: (ItemId: " .. (itemId or "Unknown") .. ")")
-      if itemId and supplyChestIds[supplyChestIds] then
-        debug("Chest clicked: (IsSupplyChest: " .. (supplyChestIds[supplyChestIds] or "False") .. ")")
+      debug("Chest clicked: (ItemId: " .. (itemId or "Unknown") ..", IsSupplyChest: " .. (tostring(supplyChestIds[itemId]) or "False") .. ")")
+      if itemId and supplyChestIds[itemId] then
         itemLockedTime = GetTime() 
       end
     end
   end)
   self:RegisterEvent("SHOW_LOOT_TOAST", function(_, type, _, value)
-    debug("Show loot toast: (itemLockedTime: " .. (itemLockedTime or "Unknown") .. ", CurrentTime: " .. GetTime() .. ", IsSmallTimeDifference: " .. (itemLockedTime and GetTime() - itemLockedTime < 0.5) .. ", Type: " ..  (type or "Unknown") .. ", Value: " .. (value or "Unknown") ..")")
+    debug("Show loot toast: (itemLockedTime: " .. (itemLockedTime or "Unknown") .. ", CurrentTime: " .. GetTime() .. ", IsSmallTimeDifference: " .. tostring((itemLockedTime ~= nil and GetTime() - itemLockedTime < 0.5)) .. ", Type: " ..  (type or "Unknown") .. ", Value: " .. (value or "Unknown") ..")")
     if itemLockedTime and GetTime() - itemLockedTime < 0.5 and type == "money" then
       core.db.Toons[thisToon].SuppliesCopperTotal = (core.db.Toons[thisToon].SuppliesCopperTotal or 0) + value
       core:UpdateReps()
@@ -428,13 +449,15 @@ function core:GetTooltip(frame)
   local hasAlliance = "xyz"
   local hasHorde = "xyz"
 
-  for toonId, toon in pairs(core.db.Toons) do
-    if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
-    columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
-    local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
-    tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
-    tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
-    tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
+  for toonId, toon in orderedPairs(core.db.Toons) do
+    if toon and toon.Show then
+      if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
+      columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
+      local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
+      tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
+      tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
+      tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
+    end
   end
   for _, expansion in orderedPairs(core.db.Expansions) do
     local hasExpansionRowBeenAdded = false
@@ -454,19 +477,21 @@ function core:GetTooltip(frame)
     local faction = core.db.Factions[factionId]
     tooltip:SetCell(row, 1, YELLOWFONT .. faction.Name .. FONTEND)
     for toonName, toon in pairs(core.db.Toons) do
-      local rep = toon.Reps[factionId]
-      if rep then
-        local display = ""
-        if rep.ParagonValue then
-          display = mod(rep.ParagonValue, rep.ParagonThreshold) .. " / " .. rep.ParagonThreshold
-          if core.db.Options.ColourParagon then display = BLUEFONT .. display .. FONTEND end
-          if rep.HasParagonReward then display = display .. " " .. paragonLootTextureString end
-        elseif rep.Current then
-          display = rep.Current .. " / " .. rep.Max
+      if toon and toon.Show then
+        local rep = toon.Reps[factionId]
+        if rep then
+          local display = ""
+          if rep.ParagonValue then
+            display = mod(rep.ParagonValue, rep.ParagonThreshold) .. " / " .. rep.ParagonThreshold
+            if core.db.Options.ColourParagon then display = BLUEFONT .. display .. FONTEND end
+            if rep.HasParagonReward then display = display .. " " .. paragonLootTextureString end
+          elseif rep.Current then
+            display = rep.Current .. " / " .. rep.Max
+          end
+          tooltip:SetCell(row, columns[toonName], format(display))
+          tooltip:SetCellScript(row, columns[toonName], "OnEnter", ShowFactionTooltip, { factionId = factionId, toonId = toonName})
+          tooltip:SetCellScript(row, columns[toonName], "OnLeave", CloseTooltips)
         end
-        tooltip:SetCell(row, columns[toonName], format(display))
-        tooltip:SetCellScript(row, columns[toonName], "OnEnter", ShowFactionTooltip, { factionId = factionId, toonId = toonName})
-        tooltip:SetCellScript(row, columns[toonName], "OnLeave", CloseTooltips)
       end
     end
   end
@@ -504,7 +529,7 @@ function core:UpdateTooltip()
 end
 
 function core:ToonInit()
-  local ti = core.db.Toons[thisToon] or { }
+  local ti = core.db.Toons[thisToon] or { Show = true }
   core.db.Toons[thisToon] = ti
   ti.LClass, ti.Class = UnitClass("player")
   ti.Faction, ti.LFaction = UnitFactionGroup("player")
@@ -547,6 +572,7 @@ function core:ShowConfig()
     _G.InterfaceOptionsFrame:Hide()
   else
     InterfaceOptionsFrame_OpenToCategory(core.optionsFactionsFrame)
+    InterfaceOptionsFrame_OpenToCategory(core.optionsCharactersFrame)
     InterfaceOptionsFrame_OpenToCategory(core.optionsGeneralFrame)
   end
 end
@@ -601,10 +627,41 @@ function core:BuildOptions()
     end
   end
 
+  local calculatedCharactersOrder = options.args.Characters.args.CharactersHeader.order
+  for characterName , character in orderedPairs(core.db.Toons) do
+    calculatedCharactersOrder = calculatedCharactersOrder + 1
+    local formattedName = ClassColorise(character.Class, characterName)
+    options.args.Characters.args[formattedName] = {
+      type = "group",
+      order = calculatedCharactersOrder,
+      name = formattedName,
+      args = {
+        GeneralHeader = {
+          order = 2,
+          type = "header",
+          name = "General settings",
+        },
+        Show = {
+          type = "toggle",
+          order = 10,
+          name = "Show",
+          get = function(info)
+            return core.db.Toons[characterName].Show 
+          end,
+          set = function(info, value)
+            core.db.Toons[characterName].Show = value
+            core:UpdateTooltip()
+          end,
+        },
+      },
+    }   
+  end
+
   LibStub("AceConfig-3.0"):RegisterOptionsTable("AltReps", options, { "ar", "altreps"})
   local AceConfigDialog = LibStub("AceConfigDialog-3.0")
   core.optionsGeneralFrame = AceConfigDialog:AddToBlizOptions("AltReps", nil, nil, "General")
   core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
+  core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
 end
 
 function ShowToonTooltip(cell, arg, ...)
