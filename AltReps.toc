@@ -2,7 +2,7 @@
 ## Title: AltReps
 ## Notes: Tracks Reputations for all your characters
 ## Author: Eylwen
-## Version: 0.0.1
+## Version: 1.0.0
 ## SavedVariables: AltRepsDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
