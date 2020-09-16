@@ -60,11 +60,12 @@ local supplyChestIds = {
 }
 
 local defaultDB = {
-  DBVersion = 2,
+  DBVersion = 3,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
-    ColourParagon = true
+    ColourParagon = true,
+    Debug = false
   },
   Toons = {},
   Expansions = {
@@ -270,6 +271,16 @@ local options = {
             addon.icon:Refresh(addonName)
           end,
         },
+        Debug = {
+          type = "toggle",
+          name = "Debug",
+          desc = "Enable debug mode",
+          order = 4,
+          get = function(info) return core.db.Options.Debug end,
+          set = function(info, value)
+            core.db.Options.Debug = value
+          end,
+        },
       },
     },
     Factions = {
@@ -307,13 +318,12 @@ function core:OnInitialize()
 
   if not AltRepsDB.DBVersion or AltRepsDB.DBVersion < 1 then
     AltRepsDB = defaultDB
-  elseif AltRepsDB.DBVersion < 2 then
+  elseif AltRepsDB.DBVersion < 3 then
     AltRepsDB.Window = defaultDB.Window
     AltRepsDB.Options = defaultDB.Options
-    AltRepsDB.DBVersion = 2
+    AltRepsDB.Factions = defaultDB.Factions
+    AltRepsDB.DBVersion = 3
   end
-
-  if AltRepsDB.Factions[2391] then AltRepsDB.Factions[2391].For = "Alliance;Horde" end
 
   core.db = AltRepsDB
 
@@ -348,13 +358,17 @@ function core:OnEnable()
   self:RegisterEvent("QUEST_TURNED_IN", function() core:UpdateReps() end)
   self:RegisterEvent("ITEM_LOCKED", function(_, bagId, slotId)
     if bagId and slotId then
+      debug("Chest clicked: (BagId: " .. (bagId or "Unknown") .. ", SlotId: " .. (slotId or "Unknown") .. ")")
       local itemId =  GetContainerItemID(bagId, slotId)
+      debug("Chest clicked: (ItemId: " .. (itemId or "Unknown") .. ")")
       if itemId and supplyChestIds[supplyChestIds] then
+        debug("Chest clicked: (IsSupplyChest: " .. (supplyChestIds[supplyChestIds] or "False") .. ")")
         itemLockedTime = GetTime() 
       end
     end
   end)
   self:RegisterEvent("SHOW_LOOT_TOAST", function(_, type, _, value)
+    debug("Show loot toast: (itemLockedTime: " .. (itemLockedTime or "Unknown") .. ", CurrentTime: " .. GetTime() .. ", IsSmallTimeDifference: " .. (itemLockedTime and GetTime() - itemLockedTime < 0.5) .. ", Type: " ..  (type or "Unknown") .. ", Value: " .. (value or "Unknown") ..")")
     if itemLockedTime and GetTime() - itemLockedTime < 0.5 and type == "money" then
       core.db.Toons[thisToon].SuppliesCopperTotal = (core.db.Toons[thisToon].SuppliesCopperTotal or 0) + value
       core:UpdateReps()
@@ -399,6 +413,7 @@ function core:GetWindow()
 end
 
 function core:GetTooltip(frame)
+  debug("GetTooltip: Start")
   if core.tooltip then LibQTip:Release(core.tooltip) end
   local tooltip = LibQTip:Acquire("AltRepsTooltip", 1, "LEFT")
   tooltip:SetCellMarginH(0)
@@ -477,12 +492,15 @@ function core:GetTooltip(frame)
   tooltip:SetPoint("BOTTOMLEFT",frame)
   tooltip:SetFrameLevel(frame:GetFrameLevel()+1)
   tooltip:Show()
+  debug("GetTooltip: End")
 end
 
 function core:UpdateTooltip()
+  debug("UpdateTooltip: Start")
   if core.frame and core.frame:IsShown() then
     core:GetTooltip(core.frame)
   end
+  debug("UpdateTooltip: End")
 end
 
 function core:ToonInit()
@@ -493,6 +511,7 @@ function core:ToonInit()
 end
 
 function core:UpdateReps()
+  debug("UpdateReps: Start")
   local toon = core.db.Toons[thisToon]
   for factionId, _ in pairs(core.db.Factions) do
     local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
@@ -509,8 +528,8 @@ function core:UpdateReps()
       }
     end
   end
-
   core:UpdateTooltip()
+  debug("UpdateReps: End")
 end
 
 function core:ToggleVisibility(info)
@@ -657,6 +676,12 @@ function ShowFactionTooltip(cell, arg, ...)
   end
 
   finishMiniTooltip()
+end
+
+function debug(...)
+  if core.db.Options.Debug then
+    chatMsg(...)
+  end
 end
 
 function chatMsg(...)
