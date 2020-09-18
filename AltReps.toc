@@ -2,10 +2,12 @@
 ## Title: AltReps
 ## Notes: Tracks Reputations for all your characters
 ## Author: Eylwen
-## Version: 1.0.1
+## Version: @project-version@
 ## SavedVariables: AltRepsDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
+## X-Curse-Project-ID: 408394
+## X-WoWI-ID: 25680
 
 libs.xml
 
