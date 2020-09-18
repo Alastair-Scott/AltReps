@@ -1,0 +1,2 @@
+## Changes
+Updated release process
