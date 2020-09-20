@@ -599,10 +599,11 @@ function core:GetSlider(frame, toonCount)
     scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
     scrollBarFrame:SetOrientation('HORIZONTAL')
     core:SkinFrame(scrollBarFrame,"AltRepsScrollBarFrame")
-    scrollBarFrame.back = scrollBarFrame:CreateTexture(nil, "BACKGROUND");
-    scrollBarFrame.back:SetColorTexture(0,0,0,0.4)
-    scrollBarFrame.back:SetAllPoints(scrollBarFrame)
-    scrollBarFrame:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
+    if scrollBarFrame.backdrop then
+      scrollBarFrame.backdrop:SetPoint('TOPLEFT', scrollBarFrame, 'TOPLEFT', 0, 0)
+      scrollBarFrame.backdrop:SetPoint('BOTTOMRIGHT', scrollBarFrame, 'BOTTOMRIGHT', 0, 0)
+    end
+    
     scrollBarFrame:SetValueStep(1)
     scrollBarFrame:EnableMouseWheel(true);
     scrollBarFrame:SetScript("OnValueChanged", function(self,value,arg1)
@@ -612,7 +613,6 @@ function core:GetSlider(frame, toonCount)
         core:UpdateTooltip()
       end
     end)
-
     local downButton = scrollBarFrame.ScrollDownButton or _G["AltRepsScrollBarFrameScrollDownButton"]
     if downButton then
       downButton:SetAlpha(0)
@@ -624,6 +624,7 @@ function core:GetSlider(frame, toonCount)
     core.slider = scrollBarFrame
   end
   frame:SetHeight(h + 15)
+  core.slider:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
   core.slider:SetSize(w*frame:GetScale(),20)
   if core.slider.CurrentValue == nil then
     core.slider:SetValue(1)
@@ -722,6 +723,14 @@ function core:SkinFrame(frame,name)
         Tukui[1].SkinCloseButton(close)
       end
       close:SetAlpha(1)
+    end
+    if string.find(name, "ScrollBar") then
+      if ElvUI then
+        ElvUI[1]:GetModule('Skins'):HandleScrollBar(frame)
+      end
+      if Tukui and Tukui[1] and Tukui[1].SkinScrollBar then
+        Tukui[1].SkinScrollBar(frame)
+      end
     end
   end
 end
