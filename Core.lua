@@ -19,6 +19,24 @@ local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
 local GOLDFONT = NORMAL_FONT_COLOR_CODE
 local BLUEFONT = "|cff00ffdd";
 
+local fontSizes = {
+  [6] = "6 pt",
+  [7] = "7 pt",
+  [8] = "8 pt",
+  [9] = "9 pt",
+  [10] = "10 pt",
+  [11] = "11 pt",
+  [12] = "12 pt",
+  [13] = "13 pt",
+  [14] = "14 pt",
+  [15] = "15 pt",
+  [16] = "16 pt",
+  [17] = "17 pt",
+  [18] = "18 pt",
+  [19] = "19 pt",
+  [20] = "20 pt" 
+}
+
 local factionStandings = {
   [0] = "Unknown",
   [1] = "Hated",
@@ -60,12 +78,14 @@ local supplyChestIds = {
 }
 
 local defaultDB = {
-  DBVersion = 3,
+  DBVersion = 4,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
     ColourParagon = true,
-    Debug = false
+    Debug = false,
+    FontSize = 12,
+    MaxCharacters = 12
   },
   Toons = {},
   Expansions = {
@@ -271,8 +291,20 @@ local options = {
             addon.icon:Refresh(addonName)
           end,
         },
-        GeneralHeader = {
+        FontSize = {
+          type = "select",
+          name = "Font size",
+          desc = "Font size",
           order = 4,
+          values = fontSizes,
+          get = function(info) return core.db.Options.FontSize end,
+          set = function(info, value)
+            core.db.Options.FontSize = value
+            core:UpdateTooltip()
+          end,
+        },
+        GeneralHeader = {
+          order = 20,
           type = "header",
           name = "Advanced settings",
         },
@@ -280,7 +312,7 @@ local options = {
           type = "toggle",
           name = "Debug",
           desc = "Enable debug mode",
-          order = 5,
+          order = 21,
           get = function(info) return core.db.Options.Debug end,
           set = function(info, value)
             core.db.Options.Debug = value
@@ -318,6 +350,28 @@ local options = {
       name = "Character settings",
       cmdHidden = true,
       args = {
+        GeneralSettings = {
+          type = "header",
+          order = 10,
+          name = "General settings"
+        },
+        GeneralSettings = {
+          type = "range",
+          min = 4,
+          max = 16,
+          step = 1,
+          order = 10,
+          name = "Max Characters",
+          desc = "How many characters should be shown at once before scrolling is enabled",
+          get = function(info) return core.db.Options.MaxCharacters end,
+          set = function(info, value)
+            core.db.Options.MaxCharacters = value
+            if core.slider then
+              core.slider:SetValue(1)
+            end
+            core:UpdateTooltip()
+          end,
+        },
         CharactersHeader = {
           type = "header",
           order = 100,
@@ -345,7 +399,10 @@ function core:OnInitialize()
         toon.Show = true
       end
     end
-    AltRepsDB.DBVersion = 3
+  elseif AltRepsDB.DBVersion < 4 then
+    AltRepsDB.Options.FontSize = defaultDB.Options.FontSize
+    AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
+    AltRepsDB.DBVersion = 4
   end
 
   core.db = AltRepsDB
@@ -438,6 +495,7 @@ function core:GetTooltip(frame)
   if core.tooltip then LibQTip:Release(core.tooltip) end
   local tooltip = LibQTip:Acquire("AltRepsTooltip", 1, "LEFT")
   tooltip:SetCellMarginH(0)
+  tooltip:SetFont(core:GetFont())
   tooltip.anchorframe = f
   tooltip:Clear()
   tooltip:SetScale(1)
@@ -449,19 +507,24 @@ function core:GetTooltip(frame)
   local hasAlliance = "xyz"
   local hasHorde = "xyz"
 
+  local toonIndex = 0
+  local toonSliderValue = (core.slider and core.slider.CurrentValue) or 1
+  
   for toonId, toon in orderedPairs(core.db.Toons) do
     if toon and toon.Show then
-      if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
-      columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
-      local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
-      tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
-      tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
-      tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
+      toonIndex = toonIndex + 1
+      if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
+        if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
+        columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
+        local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
+        tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
+        tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
+        tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
+      end
     end
   end
   for _, expansion in orderedPairs(core.db.Expansions) do
     local hasExpansionRowBeenAdded = false
-    
     for factionId, faction in orderedPairs(core.db.Factions) do
       if (faction.Show and expansion.Id == faction.ExpansionId and (string.find(faction.For, hasAlliance) or string.find(faction.For, hasHorde))) then
         if not hasExpansionRowBeenAdded then
@@ -477,7 +540,7 @@ function core:GetTooltip(frame)
     local faction = core.db.Factions[factionId]
     tooltip:SetCell(row, 1, YELLOWFONT .. faction.Name .. FONTEND)
     for toonName, toon in pairs(core.db.Toons) do
-      if toon and toon.Show then
+      if toon and toon.Show and columns[toonName] then
         local rep = toon.Reps[factionId]
         if rep then
           local display = ""
@@ -514,10 +577,59 @@ function core:GetTooltip(frame)
   core:SkinFrame(tooltip,"SavedInstancesTooltip")
   LibQTip.layoutCleaner:CleanupLayouts()
   tooltip:ClearAllPoints()
-  tooltip:SetPoint("BOTTOMLEFT",frame)
+  tooltip:SetPoint("TOPLEFT",frame, "TOPLEFT", 0, -20)
   tooltip:SetFrameLevel(frame:GetFrameLevel()+1)
   tooltip:Show()
+
+  local toonCount = tablelength(core.db.Toons)
+  if toonCount > core.db.Options.MaxCharacters then
+    core:GetSlider(frame, toonCount)
+  elseif core.slider and core.slider:IsShown() then
+    core.slider:Hide()
+  end
+
   debug("GetTooltip: End")
+end
+
+function core:GetSlider(frame, toonCount)
+  local w,h = frame:GetSize()
+  if not core.slider then
+    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrame", frame, "UIPanelScrollBarTemplate")
+    scrollBarFrame:SetPoint("BOTTOMLEFT",frame)
+    scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
+    scrollBarFrame:SetOrientation('HORIZONTAL')
+    core:SkinFrame(scrollBarFrame,"AltRepsScrollBarFrame")
+    scrollBarFrame.back = scrollBarFrame:CreateTexture(nil, "BACKGROUND");
+    scrollBarFrame.back:SetColorTexture(0,0,0,0.4)
+    scrollBarFrame.back:SetAllPoints(scrollBarFrame)
+    scrollBarFrame:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
+    scrollBarFrame:SetValueStep(1)
+    scrollBarFrame:EnableMouseWheel(true);
+    scrollBarFrame:SetScript("OnValueChanged", function(self,value,arg1)
+      local rounded = round(value)
+      if not (core.slider.CurrentValue == rounded) then
+        core.slider.CurrentValue = rounded
+        core:UpdateTooltip()
+      end
+    end)
+
+    local downButton = scrollBarFrame.ScrollDownButton or _G["AltRepsScrollBarFrameScrollDownButton"]
+    if downButton then
+      downButton:SetAlpha(0)
+    end
+    local upButton = scrollBarFrame.ScrollUpButton or _G["AltRepsScrollBarFrameScrollUpButton"]
+    if upButton then
+      upButton:SetAlpha(0)
+    end
+    core.slider = scrollBarFrame
+  end
+  frame:SetHeight(h + 15)
+  core.slider:SetSize(w*frame:GetScale(),20)
+  if core.slider.CurrentValue == nil then
+    core.slider:SetValue(1)
+  end
+  core.slider:Show()
+  return core.slider
 end
 
 function core:UpdateTooltip()
@@ -565,6 +677,22 @@ function core:ToggleVisibility(info)
     core:GetTooltip(core.frame)
     core.frame:Show()
   end
+end
+
+function core:GetFont()
+  local fontSize = core.db.Options.FontSize
+  if addon.font then
+    local fontPath, size, _ = addon.font:GetFont()
+    addon.font:SetFont(fontPath, fontSize, "OUTLINE")
+    return addon.font
+  end
+  addon.font = CreateFont("SavedInstancedTooltipHeaderFont")    
+  local temp = LibQTip:Acquire("TempTooltipHeader", 1, "LEFT")
+  local hFont = temp:GetHeaderFont()
+  local hFontPath, hFontSize,_ = hFont:GetFont()
+  addon.font:SetFont(hFontPath, fontSize, "OUTLINE")
+  LibQTip:Release(temp)
+  return addon.font
 end
 
 function core:ShowConfig()
@@ -794,6 +922,16 @@ function CloseTooltips()
   if miniTooltip then
     miniTooltip:Hide()
   end
+end
+
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
+function round(x)
+  return x>=0 and math.floor(x+0.5) or math.ceil(x-0.5)
 end
 
 function __genOrderedIndex( t )
