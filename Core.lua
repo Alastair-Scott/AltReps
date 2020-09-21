@@ -84,7 +84,6 @@ local defaultDB = {
   Options = {
     ColourParagon = true,
     Debug = false,
-    FontSize = 12,
     MaxCharacters = 12
   },
   Toons = {},
@@ -291,18 +290,6 @@ local options = {
             addon.icon:Refresh(addonName)
           end,
         },
-        FontSize = {
-          type = "select",
-          name = "Font size",
-          desc = "Font size",
-          order = 4,
-          values = fontSizes,
-          get = function(info) return core.db.Options.FontSize end,
-          set = function(info, value)
-            core.db.Options.FontSize = value
-            core:UpdateTooltip()
-          end,
-        },
         GeneralHeader = {
           order = 20,
           type = "header",
@@ -357,8 +344,8 @@ local options = {
         },
         GeneralSettings = {
           type = "range",
-          min = 4,
-          max = 16,
+          min = 2,
+          max = 20,
           step = 1,
           order = 10,
           name = "Max Characters",
@@ -400,10 +387,11 @@ function core:OnInitialize()
       end
     end
   elseif AltRepsDB.DBVersion < 4 then
-    AltRepsDB.Options.FontSize = defaultDB.Options.FontSize
     AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
     AltRepsDB.DBVersion = 4
   end
+
+  AltRepsDB.Options.FontSize = nil
 
   core.db = AltRepsDB
   
@@ -495,7 +483,6 @@ function core:GetTooltip(frame)
   if core.tooltip then LibQTip:Release(core.tooltip) end
   local tooltip = LibQTip:Acquire("AltRepsTooltip", 1, "LEFT")
   tooltip:SetCellMarginH(0)
-  tooltip:SetFont(core:GetFont())
   tooltip.anchorframe = f
   tooltip:Clear()
   tooltip:SetScale(1)
@@ -509,6 +496,17 @@ function core:GetTooltip(frame)
 
   local toonIndex = 0
   local toonSliderValue = (core.slider and core.slider.CurrentValue) or 1
+  local currentToon = core.db.Toons[thisToon]
+
+  if currentToon and currentToon.Show then
+    toonIndex = toonIndex + 1
+    if currentToon.Faction == "Alliance" then hasAlliance = currentToon.Faction elseif currentToon.Faction == "Horde" then hasHorde = currentToon.Faction end;
+    columns[thisToon] = columns[thisToon] or tooltip:AddColumn("CENTER")
+    local toonname, toonserver = thisToon:match('^(.*)[-](.*)$')
+    tooltip:SetCell(header, columns[thisToon], ClassColorise(currentToon.Class, toonname), "CENTER")
+    tooltip:SetCellScript(header, columns[thisToon], "OnEnter", ShowToonTooltip, thisToon)
+    tooltip:SetCellScript(header, columns[thisToon], "OnLeave", CloseTooltips)
+  end
   
   for toonId, toon in orderedPairs(core.db.Toons) do
     if toon and toon.Show then
@@ -678,22 +676,6 @@ function core:ToggleVisibility(info)
     core:GetTooltip(core.frame)
     core.frame:Show()
   end
-end
-
-function core:GetFont()
-  local fontSize = core.db.Options.FontSize
-  if addon.font then
-    local fontPath, size, _ = addon.font:GetFont()
-    addon.font:SetFont(fontPath, fontSize, "OUTLINE")
-    return addon.font
-  end
-  addon.font = CreateFont("SavedInstancedTooltipHeaderFont")    
-  local temp = LibQTip:Acquire("TempTooltipHeader", 1, "LEFT")
-  local hFont = temp:GetHeaderFont()
-  local hFontPath, hFontSize,_ = hFont:GetFont()
-  addon.font:SetFont(hFontPath, fontSize, "OUTLINE")
-  LibQTip:Release(temp)
-  return addon.font
 end
 
 function core:ShowConfig()
