@@ -9,7 +9,8 @@ local pairs = pairs
 local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 
 local miniTooltip = nil
-local thisToon = UnitName("player") .. " - " .. GetRealmName()
+local thisServer = GetRealmName()
+local thisToon = UnitName("player") .. " - " .. thisServer
 local goldTextureString = "|TInterface\\Icons\\INV_Misc_Coin_01:0|t"
 local paragonLootTextureString = "|TInterface\\Icons\\Inv_misc_bag_10:0|t"
 
@@ -19,22 +20,18 @@ local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
 local GOLDFONT = NORMAL_FONT_COLOR_CODE
 local BLUEFONT = "|cff00ffdd";
 
-local fontSizes = {
-  [6] = "6 pt",
-  [7] = "7 pt",
-  [8] = "8 pt",
-  [9] = "9 pt",
-  [10] = "10 pt",
-  [11] = "11 pt",
-  [12] = "12 pt",
-  [13] = "13 pt",
-  [14] = "14 pt",
-  [15] = "15 pt",
-  [16] = "16 pt",
-  [17] = "17 pt",
-  [18] = "18 pt",
-  [19] = "19 pt",
-  [20] = "20 pt" 
+local connectedRealms = {}
+
+local showCharacterServerOptions = {
+  [0] = "Show all",
+  [1] = "This server only",
+  [2] = "This connected realm"
+}
+
+local groupCharacterServerOptions = {
+  [0] = "Do not group",
+  [1] = "Group by server",
+  [2] = "Group by connected realm"
 }
 
 local factionStandings = {
@@ -78,13 +75,15 @@ local supplyChestIds = {
 }
 
 local defaultDB = {
-  DBVersion = 4,
+  DBVersion = 5,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
     ColourParagon = true,
     Debug = false,
-    MaxCharacters = 12
+    MaxCharacters = 12,
+    ShowCharactersFromServerOption = 0,
+    GroupCharactersByServerOption = 0
   },
   Toons = {},
   Expansions = {
@@ -342,7 +341,7 @@ local options = {
           order = 10,
           name = "General settings"
         },
-        GeneralSettings = {
+        MaxCharacters = {
           type = "range",
           min = 2,
           max = 20,
@@ -356,6 +355,30 @@ local options = {
             if core.slider then
               core.slider:SetValue(1)
             end
+            core:UpdateTooltip()
+          end,
+        },
+        ShowCharactersFromServers = {
+          type = "select",
+          values = showCharacterServerOptions,
+          order = 20,
+          name = "Characters to show",
+          desc = "Should we show characters based on their server",
+          get = function(info) return core.db.Options.ShowCharactersFromServerOption end,
+          set = function(info, value)
+            core.db.Options.ShowCharactersFromServerOption = value
+            core:UpdateTooltip()
+          end,
+        },
+        GroupCharactersByServers = {
+          type = "select",
+          values = groupCharacterServerOptions,
+          order = 30,
+          name = "Character grouping",
+          desc = "Should we group characters based on their server",
+          get = function(info) return core.db.Options.GroupCharactersByServerOption end,
+          set = function(info, value)
+            core.db.Options.GroupCharactersByServerOption = value
             core:UpdateTooltip()
           end,
         },
@@ -386,12 +409,10 @@ function core:OnInitialize()
         toon.Show = true
       end
     end
-  elseif AltRepsDB.DBVersion < 4 then
-    AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
-    AltRepsDB.DBVersion = 4
+  elseif AltRepsDB.DBVersion <= 5 then
+    AltRepsDB.Options = AltRepsDB.Options
+    AltRepsDB.DBVersion = 5
   end
-
-  AltRepsDB.Options.FontSize = nil
 
   core.db = AltRepsDB
   
@@ -420,7 +441,10 @@ end
 
 local itemLockedTime
 function core:OnEnable()
-  self:RegisterEvent("PLAYER_ENTERING_WORLD", function() core:UpdateReps() end)
+  self:RegisterEvent("PLAYER_ENTERING_WORLD", function() 
+    core:UpdateReps() 
+    core:UpdateConnectedRealms()
+  end)
   self:RegisterEvent("UPDATE_FACTION", function() core:UpdateReps() end)
   self:RegisterEvent("QUEST_TURNED_IN", function() core:UpdateReps() end)
   self:RegisterEvent("ITEM_LOCKED", function(_, bagId, slotId)
@@ -497,24 +521,26 @@ function core:GetTooltip(frame)
   local toonIndex = 0
   local toonSliderValue = (core.slider and core.slider.CurrentValue) or 1
   local currentToon = core.db.Toons[thisToon]
+  local grouping = core.db.Options.GroupCharactersByServerOption
 
   if currentToon and currentToon.Show then
     toonIndex = toonIndex + 1
     if currentToon.Faction == "Alliance" then hasAlliance = currentToon.Faction elseif currentToon.Faction == "Horde" then hasHorde = currentToon.Faction end;
     columns[thisToon] = columns[thisToon] or tooltip:AddColumn("CENTER")
-    local toonname, toonserver = thisToon:match('^(.*)[-](.*)$')
+    local toonname, toonserver = core:GetCharacterNameAndServer(thisToon)
     tooltip:SetCell(header, columns[thisToon], ClassColorise(currentToon.Class, toonname), "CENTER")
     tooltip:SetCellScript(header, columns[thisToon], "OnEnter", ShowToonTooltip, thisToon)
     tooltip:SetCellScript(header, columns[thisToon], "OnLeave", CloseTooltips)
   end
   
-  for toonId, toon in orderedPairs(core.db.Toons) do
+  for toonId, toon in orderedPairs(core.db.Toons, grouping) do
+    local toonname, toonserver = core:GetCharacterNameAndServer(toonId)
+    local showToonSetting = core.db.Options.ShowCharactersFromServerOption
     if toon and toon.Show then
       toonIndex = toonIndex + 1
       if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
         if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
         columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
-        local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
         tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
         tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
         tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
@@ -747,7 +773,7 @@ function core:BuildOptions()
   end
 
   local calculatedCharactersOrder = options.args.Characters.args.CharactersHeader.order
-  for characterName , character in orderedPairs(core.db.Toons) do
+  for characterName, character in orderedPairs(core.db.Toons) do
     calculatedCharactersOrder = calculatedCharactersOrder + 1
     local formattedName = ClassColorise(character.Class, characterName)
     options.args.Characters.args[formattedName] = {
@@ -773,7 +799,7 @@ function core:BuildOptions()
           end,
         },
       },
-    }   
+    }
   end
 
   LibStub("AceConfig-3.0"):RegisterOptionsTable("AltReps", options, { "ar", "altreps"})
@@ -781,6 +807,27 @@ function core:BuildOptions()
   core.optionsGeneralFrame = AceConfigDialog:AddToBlizOptions("AltReps", nil, nil, "General")
   core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
   core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
+end
+
+function core:UpdateConnectedRealms(server)
+  if server and not connectedRealms[server] then
+    local servers = GetAutoCompleteRealms(server)
+    for k, v in orderedPairs(servers) do
+      connectedRealms[value] = table.concat(servers, ';')
+    end
+  end  
+end
+
+function core:GetCharacterNameAndServer(name)
+  local arg1, arg2 = name:match('^(.*)[-](.*)$')
+  arg1 = arg1:gsub("%s", "")
+  arg2 = arg2:gsub("%s", "")
+
+  if string.find(name, arg1) < string.find(name, arg2) then
+    return arg1, arg2
+  else
+    return arg2, arg1
+  end
 end
 
 function ShowToonTooltip(cell, arg, ...)
@@ -926,15 +973,25 @@ function round(x)
 end
 
 function __genOrderedIndex( t )
+  local groupSetting = core.db.Options.GroupCharactersByServerOption
   local orderedIndex = {}
   for key in pairs(t) do
+      if group then
+        local name, server = core:GetCharacterNameAndServer(key)
+        if group == 1 then
+          key = server .. " - " .. name
+        elseif group == 2 then
+          core:UpdateConnectedRealms(server)
+          key = (connectedRealms[server] or server ) .. " - " .. name
+        end
+      end
       table.insert( orderedIndex, key )
   end
   table.sort( orderedIndex )
   return orderedIndex
 end
 
-function orderedNext(t, state)
+function orderedNext(t, state, group)
   -- Equivalent of the next function, but returns the keys in the alphabetic
   -- order. We use a temporary ordered key table that is stored in the
   -- table being iterated.
@@ -943,7 +1000,7 @@ function orderedNext(t, state)
   --print("orderedNext: state = "..tostring(state) )
   if state == nil then
       -- the first time, generate the index
-      t.__orderedIndex = __genOrderedIndex( t )
+      t.__orderedIndex = __genOrderedIndex( t, group )
       key = t.__orderedIndex[1]
   else
       -- fetch the next value
@@ -963,8 +1020,8 @@ function orderedNext(t, state)
   return
 end
 
-function orderedPairs(t)
+function orderedPairs(t, group)
   -- Equivalent of the pairs() function on tables. Allows to iterate
   -- in order
-  return orderedNext, t, nil
+  return orderedNext, t, nil, group
 end
