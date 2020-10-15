@@ -448,7 +448,7 @@ end
 
 function core:GetWindow()
   if not core.frame then
-    local f = CreateFrame("Frame","AltRepsFrame", UIParent, "BasicFrameTemplate")
+    local f = CreateFrame("Frame","AltRepsFrame", UIParent, "BasicFrameTemplate, BackdropTemplate")
     f:SetMovable(true)
     f:SetFrameStrata("TOOLTIP")
     f:SetFrameLevel(100)

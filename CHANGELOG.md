@@ -1,3 +1,6 @@
+### Changes: V2.0.2
+- Fixed frame template inheritence
+
 ### Changes: V2.0.1
 - Fixed libs
 
