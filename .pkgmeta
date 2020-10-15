@@ -1,14 +1,14 @@
 package-as: AltReps
 
 externals:
-    AltReps/Libs/AceAddon-3.0: https://repos.wowace.com/wow/ace3/trunk/AceAddon-3.0
-    AltReps/Libs/AceConfig-3.0: https://repos.wowace.com/wow/ace3/trunk/AceConfig-3.0
-    AltReps/Libs/AceConsole-3.0: https://repos.wowace.com/wow/ace3/trunk/AceConsole-3.0
-    AltReps/Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
-    AltReps/Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
-    AltReps/Libs/LibDataBroker-1.1: https://github.com/tekkub/libdatabroker-1-1
-    AltReps/Libs/LibQTip-1.0: https://repos.wowace.com/wow/libqtip-1-0
-    AltReps/Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
+
+embedded-libraries:
+    - Ace3
+    - CallbackHandler
+    - LibDataBroker-1-1
+    - LibDBIcon-1-0
+    - LibQTip-1-0
+    - LibStub
 
 ignore:
     - README.md
