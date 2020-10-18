@@ -10,7 +10,7 @@ local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 
 local miniTooltip = nil
 local thisToon = UnitName("player") .. " - " .. GetRealmName()
-local goldTextureString = "|TInterface\\Icons\\INV_Misc_Coin_01:0|t"
+local goldTextureString = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"
 local paragonLootTextureString = "|TInterface\\Icons\\Inv_misc_bag_10:0|t"
 
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
@@ -18,24 +18,6 @@ local FONTEND = FONT_COLOR_CODE_CLOSE
 local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
 local GOLDFONT = NORMAL_FONT_COLOR_CODE
 local BLUEFONT = "|cff00ffdd";
-
-local fontSizes = {
-  [6] = "6 pt",
-  [7] = "7 pt",
-  [8] = "8 pt",
-  [9] = "9 pt",
-  [10] = "10 pt",
-  [11] = "11 pt",
-  [12] = "12 pt",
-  [13] = "13 pt",
-  [14] = "14 pt",
-  [15] = "15 pt",
-  [16] = "16 pt",
-  [17] = "17 pt",
-  [18] = "18 pt",
-  [19] = "19 pt",
-  [20] = "20 pt" 
-}
 
 local factionStandings = {
   [0] = "Unknown",
@@ -49,36 +31,8 @@ local factionStandings = {
   [8] = "Exalted",
 }
 
-local supplyChestIds = {
-  [166295] = true, -- Proudmoore Admiralty Supplies
-  [166297] = true, -- Order of Embers Supplies
-  [166294] = true, -- Storm's Wake Supplies
-  [166300] = true, -- 7th Legion Supplies
-  [166292] = true, -- Zandalari Empire Supplies
-  [166282] = true, -- Talanji's Expedition Supplies
-  [166290] = true, -- Voldunai Supplies
-  [166299] = true, -- Honorbound Supplies
-  [166298] = true, -- Champions of Azeroth Supplies
-  [166245] = true, -- Tortollan Seekers Supplies
-  [170061] = true, -- Rustbolt Supplies
-  [169939] = true, -- Ankoan Supplies
-  [169940] = true, -- Unshackled Supplies
-  [174484] = true, -- Uldum Accord Supplies
-  [174483] = true, -- Rajani Supplies
-
-  [146899] = true, -- Highmountain Supplies
-  [146901] = true, -- Valarjar Strongbox
-  [146897] = true, -- Farondis Chest
-  [146898] = true, -- Dreamweaver Cache
-  [146900] = true, -- Nightfallen Cache
-  [146902] = true, -- Warden's Supply Kit
-  [147361] = true, -- Legionfall Chest
-  [152922] = true, -- Brittle Krokul Chest
-  [152923] = true, -- Gleaming Footlocker
-}
-
 local defaultDB = {
-  DBVersion = 4,
+  DBVersion = 5,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
@@ -90,11 +44,13 @@ local defaultDB = {
   Expansions = {
     [0] = {
       Name = "Battle for Azeroth",
-      Id = 8
+      Id = 8,
+      SupplyChestValue = 4000
     },
     [1] = {
       Name = "Legion",
-      Id = 7
+      Id = 7,
+      SupplyChestValue = 750
     }
   },
   Factions = {
@@ -245,130 +201,6 @@ local defaultDB = {
   }
 }
 
-local options = {
-  name = "AltReps",
-  handler = core,
-  type = 'group',
-  args = {
-    toggle = {
-      name = "Show / Hide",
-      guiHidden = true,
-      type = "execute",
-      func = function() core:ToggleVisibility() end,
-    },
-    config = {
-      name = "Open config",
-      guiHidden = true,
-      type = "execute",
-      func = function() core:ShowConfig() end,
-    },
-    General = {
-      order = 1,
-      type = "group",
-      name = "General settings",
-      cmdHidden = true,
-      args = {
-        ver = {
-          order = 0.5,
-          type = "description",
-          name = function() return "Version: AltReps " .. addon.version end,
-        },
-        GeneralHeader = {
-          order = 2,
-          type = "header",
-          name = "General settings",
-        },
-        MinimapIcon = {
-          type = "toggle",
-          name = "Show minimap button",
-          desc = "Show the AltReps minimap button",
-          order = 3,
-          hidden = function() return not addon.icon end,
-          get = function(info) return not core.db.MinimapIcon.hide end,
-          set = function(info, value)
-            core.db.MinimapIcon.hide = not value
-            addon.icon:Refresh(addonName)
-          end,
-        },
-        GeneralHeader = {
-          order = 20,
-          type = "header",
-          name = "Advanced settings",
-        },
-        Debug = {
-          type = "toggle",
-          name = "Debug",
-          desc = "Enable debug mode",
-          order = 21,
-          get = function(info) return core.db.Options.Debug end,
-          set = function(info, value)
-            core.db.Options.Debug = value
-          end,
-        },
-      },
-    },
-    Factions = {
-      order = 2,
-      type = "group",
-      name = "Faction settings",
-      cmdHidden = true,
-      args = {
-        ParagonValueColor = {
-          type = "toggle",
-          order = 10,
-          name = "Colour paragon",
-          desc = "Should paragon reputations be coloured differently",
-          get = function(info) return core.db.Options.ColourParagon end,
-          set = function(info, value)
-            core.db.Options.ColourParagon = value
-            core:UpdateTooltip()
-          end,
-        },
-        FactionsHeader = {
-          type = "header",
-          order = 100,
-          name = "Factions"
-        },
-      },
-    },
-    Characters = {
-      order = 2,
-      type = "group",
-      name = "Character settings",
-      cmdHidden = true,
-      args = {
-        GeneralSettings = {
-          type = "header",
-          order = 10,
-          name = "General settings"
-        },
-        GeneralSettings = {
-          type = "range",
-          min = 2,
-          max = 20,
-          step = 1,
-          order = 10,
-          name = "Max Characters",
-          desc = "How many characters should be shown at once before scrolling is enabled",
-          get = function(info) return core.db.Options.MaxCharacters end,
-          set = function(info, value)
-            core.db.Options.MaxCharacters = value
-            if core.slider then
-              core.slider:SetValue(1)
-            end
-            core:UpdateTooltip()
-          end,
-        },
-        CharactersHeader = {
-          type = "header",
-          order = 100,
-          name = "Characters"
-        },
-      },
-    },
-  },
-}
-
 function core:OnInitialize()
   local versionString = GetAddOnMetadata(addonName, "version")
   addon.version = versionString
@@ -389,14 +221,27 @@ function core:OnInitialize()
   elseif AltRepsDB.DBVersion < 4 then
     AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
     AltRepsDB.DBVersion = 4
+  elseif AltRepsDB.DBVersion < 5 then
+    for _, toon in pairs(AltRepsDB.Toons) do
+      if toon and not toon.SuppliesCopperTotal == nil then
+        toon.SuppliesCopperTotal = nil
+      end
+    end
+    AltRepsDB.Expansions = defaultDB.Expansions
+    AltRepsDB.Options.FontSize = nil
+    AltRepsDB.DBVersion = 5
   end
-
-  AltRepsDB.Options.FontSize = nil
 
   core.db = AltRepsDB
   
   core:ToonInit()
   core:BuildOptions()
+
+  LibStub("AceConfig-3.0"):RegisterOptionsTable("AltReps", addon.Options, { "ar", "altreps"})
+  local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+  core.optionsGeneralFrame = AceConfigDialog:AddToBlizOptions("AltReps", nil, nil, "General")
+  core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
+  core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
 
   addon.dataobject = addon.LDB and addon.LDB:NewDataObject("AltReps", {
     text = "AR",
@@ -418,28 +263,10 @@ function core:OnInitialize()
   end
 end
 
-local itemLockedTime
 function core:OnEnable()
   self:RegisterEvent("PLAYER_ENTERING_WORLD", function() core:UpdateReps() end)
   self:RegisterEvent("UPDATE_FACTION", function() core:UpdateReps() end)
   self:RegisterEvent("QUEST_TURNED_IN", function() core:UpdateReps() end)
-  self:RegisterEvent("ITEM_LOCKED", function(_, bagId, slotId)
-    if bagId and slotId then
-      debug("Chest clicked: (BagId: " .. (bagId or "Unknown") .. ", SlotId: " .. (slotId or "Unknown") .. ")")
-      local itemId =  GetContainerItemID(bagId, slotId)
-      debug("Chest clicked: (ItemId: " .. (itemId or "Unknown") ..", IsSupplyChest: " .. (tostring(supplyChestIds[itemId]) or "False") .. ")")
-      if itemId and supplyChestIds[itemId] then
-        itemLockedTime = GetTime() 
-      end
-    end
-  end)
-  self:RegisterEvent("SHOW_LOOT_TOAST", function(_, type, _, value)
-    debug("Show loot toast: (itemLockedTime: " .. (itemLockedTime or "Unknown") .. ", CurrentTime: " .. GetTime() .. ", IsSmallTimeDifference: " .. tostring((itemLockedTime ~= nil and GetTime() - itemLockedTime < 0.5)) .. ", Type: " ..  (type or "Unknown") .. ", Value: " .. (value or "Unknown") ..")")
-    if itemLockedTime and GetTime() - itemLockedTime < 0.5 and type == "money" then
-      core.db.Toons[thisToon].SuppliesCopperTotal = (core.db.Toons[thisToon].SuppliesCopperTotal or 0) + value
-      core:UpdateReps()
-    end
-  end)
 end
 
 function core:OnDisable()
@@ -592,7 +419,7 @@ end
 function core:GetSlider(frame, toonCount)
   local w,h = frame:GetSize()
   if not core.slider then
-    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrame", frame, "UIPanelScrollBarTemplate")
+    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrame", frame, "UIPanelScrollBarTemplate, BackdropTemplate")
     scrollBarFrame:SetPoint("BOTTOMLEFT",frame)
     scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
     scrollBarFrame:SetOrientation('HORIZONTAL')
@@ -650,18 +477,20 @@ function core:UpdateReps()
   debug("UpdateReps: Start")
   local toon = core.db.Toons[thisToon]
   for factionId, _ in pairs(core.db.Factions) do
-    local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
-    local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
-    if not toon.Reps then toon.Reps = {} end
-    if not (atWarWith and not canToggleAtWar) and name then
-      toon.Reps[factionId] = {
-        Current = barValue - barMin,
-        Max = barMax - barMin,
-        Standing = standingID,
-        HasParagonReward = hasRewardPending,
-        ParagonValue = currentValue,
-        ParagonThreshold = threshold
-      }
+    if type(factionId) == "number" then
+      local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
+      local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
+      if not toon.Reps then toon.Reps = {} end
+      if not (atWarWith and not canToggleAtWar) and name then
+        toon.Reps[factionId] = {
+          Current = barValue - barMin,
+          Max = barMax - barMin,
+          Standing = standingID,
+          HasParagonReward = hasRewardPending,
+          ParagonValue = currentValue,
+          ParagonThreshold = threshold
+        }
+      end
     end
   end
   core:UpdateTooltip()
@@ -685,6 +514,15 @@ function core:ShowConfig()
     InterfaceOptionsFrame_OpenToCategory(core.optionsFactionsFrame)
     InterfaceOptionsFrame_OpenToCategory(core.optionsCharactersFrame)
     InterfaceOptionsFrame_OpenToCategory(core.optionsGeneralFrame)
+  end
+end
+
+function core:ReopenConfigDisplay(frame)
+  if _G.InterfaceOptionsFrame:IsShown() then
+    _G.InterfaceOptionsFrame:Hide()
+    InterfaceOptionsFrame_OpenToCategory(core.optionsFactionsFrame)
+    InterfaceOptionsFrame_OpenToCategory(core.optionsCharactersFrame)
+    InterfaceOptionsFrame_OpenToCategory(frame)
   end
 end
 
@@ -718,6 +556,129 @@ function core:SkinFrame(frame,name)
 end
 
 function core:BuildOptions()
+  local options = {
+    name = "AltReps",
+    handler = core,
+    type = 'group',
+    args = {
+      toggle = {
+        name = "Show / Hide",
+        guiHidden = true,
+        type = "execute",
+        func = function() core:ToggleVisibility() end,
+      },
+      config = {
+        name = "Open config",
+        guiHidden = true,
+        type = "execute",
+        func = function() core:ShowConfig() end,
+      },
+      General = {
+        order = 1,
+        type = "group",
+        name = "General settings",
+        cmdHidden = true,
+        args = {
+          ver = {
+            order = 0.5,
+            type = "description",
+            name = function() return "Version: AltReps " .. addon.version end,
+          },
+          GeneralHeader = {
+            order = 2,
+            type = "header",
+            name = "General settings",
+          },
+          MinimapIcon = {
+            type = "toggle",
+            name = "Show minimap button",
+            desc = "Show the AltReps minimap button",
+            order = 3,
+            hidden = function() return not addon.icon end,
+            get = function(info) return not core.db.MinimapIcon.hide end,
+            set = function(info, value)
+              core.db.MinimapIcon.hide = not value
+              addon.icon:Refresh(addonName)
+            end,
+          },
+          GeneralHeader = {
+            order = 20,
+            type = "header",
+            name = "Advanced settings",
+          },
+          Debug = {
+            type = "toggle",
+            name = "Debug",
+            desc = "Enable debug mode",
+            order = 21,
+            get = function(info) return core.db.Options.Debug end,
+            set = function(info, value)
+              core.db.Options.Debug = value
+            end,
+          },
+        },
+      },
+      Factions = {
+        order = 2,
+        type = "group",
+        name = "Faction settings",
+        cmdHidden = true,
+        args = {
+          ParagonValueColor = {
+            type = "toggle",
+            order = 10,
+            name = "Colour paragon",
+            desc = "Should paragon reputations be coloured differently",
+            get = function(info) return core.db.Options.ColourParagon end,
+            set = function(info, value)
+              core.db.Options.ColourParagon = value
+              core:UpdateTooltip()
+            end,
+          },
+          FactionsHeader = {
+            type = "header",
+            order = 100,
+            name = "Factions"
+          },
+        },
+      },
+      Characters = {
+        order = 2,
+        type = "group",
+        name = "Character settings",
+        cmdHidden = true,
+        args = {
+          GeneralSettings = {
+            type = "header",
+            order = 10,
+            name = "General settings"
+          },
+          GeneralSettings = {
+            type = "range",
+            min = 2,
+            max = 20,
+            step = 1,
+            order = 10,
+            name = "Max Characters",
+            desc = "How many characters should be shown at once before scrolling is enabled",
+            get = function(info) return core.db.Options.MaxCharacters end,
+            set = function(info, value)
+              core.db.Options.MaxCharacters = value
+              if core.slider then
+                core.slider:SetValue(1)
+              end
+              core:UpdateTooltip()
+            end,
+          },
+          CharactersHeader = {
+            type = "header",
+            order = 100,
+            name = "Characters"
+          },
+        },
+      },
+    },
+  }
   local calculatedOrder = options.args.Factions.args.FactionsHeader.order
   for _ , expansion in orderedPairs(core.db.Expansions) do
     calculatedOrder = calculatedOrder + 1
@@ -735,10 +696,10 @@ function core:BuildOptions()
           order = calculatedOrder,
           name = faction.Name,
           get = function(info)
-            return core.db.Factions[factionId].Show
+            return faction.Show
           end,
           set = function(info, value)
-            core.db.Factions[factionId].Show = value
+            faction.Show = value
             core:UpdateTooltip()
           end,
         }
@@ -747,7 +708,7 @@ function core:BuildOptions()
   end
 
   local calculatedCharactersOrder = options.args.Characters.args.CharactersHeader.order
-  for characterName , character in orderedPairs(core.db.Toons) do
+  for characterName, character in orderedPairs(core.db.Toons) do
     calculatedCharactersOrder = calculatedCharactersOrder + 1
     local formattedName = ClassColorise(character.Class, characterName)
     options.args.Characters.args[formattedName] = {
@@ -765,22 +726,43 @@ function core:BuildOptions()
           order = 10,
           name = "Show",
           get = function(info)
-            return core.db.Toons[characterName].Show 
+            return character.Show 
           end,
           set = function(info, value)
-            core.db.Toons[characterName].Show = value
+            character.Show = value
             core:UpdateTooltip()
+          end,
+        },
+        AdvancedHeader = {
+          order = 100,
+          type = "header",
+          name = "Advanced settings",
+        },
+        Forget = {
+          order = 110,
+          type = "execute",
+          name = "Forget",
+          desc = "Forget " .. characterName,
+          hidden = function() return characterName == thisToon end,
+          confirm = function(info)
+            return "Are you sure you wish to forget " .. characterName .. "?"
+          end,
+          func = function(info)
+            if character then
+              core.db.Toons[characterName] = nil
+              core:BuildOptions()
+              core:UpdateTooltip()
+              core:ReopenConfigDisplay(core.optionsCharactersFrame)
+            end
           end,
         },
       },
     }   
   end
-
-  LibStub("AceConfig-3.0"):RegisterOptionsTable("AltReps", options, { "ar", "altreps"})
-  local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-  core.optionsGeneralFrame = AceConfigDialog:AddToBlizOptions("AltReps", nil, nil, "General")
-  core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
-  core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
+  addon.Options = addon.Options or {}
+  for k, v in pairs(options) do
+    addon.Options[k] = v
+  end
 end
 
 function ShowToonTooltip(cell, arg, ...)
@@ -788,31 +770,49 @@ function ShowToonTooltip(cell, arg, ...)
   if not toonId then return end
   local toon = core.db.Toons[toonId]
   if not toon then return end
-  openMiniTooltip(2, "LEFT","RIGHT")
+  openMiniTooltip(3, "LEFT", "RIGHT", "RIGHT")
   local ftex = ""
   if toon.Faction == "Alliance" then
     ftex = "\124TInterface\\TargetingFrame\\UI-PVP-Alliance:0:0:0:0:100:100:0:50:0:55\124t "
   elseif toon.Faction == "Horde" then
     ftex = "\124TInterface\\TargetingFrame\\UI-PVP-Horde:0:0:0:0:100:100:10:70:0:55\124t"
   end
-  miniTooltip:SetCell(miniTooltip:AddHeader(), 1,ftex..ClassColorise(toon.Class, toonId))
-  
-  local totalSuppliesLine = miniTooltip:AddLine()
-  miniTooltip:SetCell(totalSuppliesLine, 1, YELLOWFONT .. "Total supply chests: " .. FONTEND)
-  local suppliesCount = 0
-  for factionId, rep in pairs(toon.Reps) do
-    if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
-      local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
-      if rep.HasParagonReward then supplies = supplies - 1 end
-      suppliesCount = suppliesCount + supplies
-    end
-  end
-  miniTooltip:SetCell(totalSuppliesLine, 2, suppliesCount)
+  miniTooltip:SetCell(miniTooltip:AddHeader(), 1, ClassColorise(toon.Class, toonId) .. ftex)
 
-  local totalSuppliesGoldLine = miniTooltip:AddLine()
-  miniTooltip:SetCell(totalSuppliesGoldLine, 1, YELLOWFONT .. "Gold from supplies: " .. FONTEND)
-  local goldTotal = toon.SuppliesCopperTotal or 0
-  miniTooltip:SetCell(totalSuppliesGoldLine, 2, GetCoinTextureString(goldTotal))
+  miniTooltip:AddSeparator(6,0,0,0,0)
+
+  local rowNumber = miniTooltip:AddLine()
+  miniTooltip:SetCell(rowNumber, 1, GOLDFONT .. "Supply chests" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 2, YELLOWFONT .. "Opened" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 3, YELLOWFONT .. "Gold earned (Approx.)" .. FONTEND)
+
+  local totalSupplies, totalGold = 0, 0
+  for expansionIndex, expansion in orderedPairs(core.db.Expansions) do
+    local expansionSupplies, expansionGold = 0, 0
+    for factionId, faction in orderedPairs(core.db.Factions) do
+      if expansion.Id == faction.ExpansionId then
+        local rep = toon.Reps[factionId]
+        if rep and rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
+          local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
+          if rep.HasParagonReward then supplies = supplies - 1 end
+          expansionSupplies = expansionSupplies + supplies
+          totalSupplies = totalSupplies + supplies
+          expansionGold = expansionGold + supplies * expansion.SupplyChestValue
+          totalGold = totalGold + supplies * expansion.SupplyChestValue
+        end
+      end
+    end
+
+    rowNumber = miniTooltip:AddLine()
+    miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. expansion.Name .. FONTEND)
+    miniTooltip:SetCell(rowNumber, 2, expansionSupplies)
+    miniTooltip:SetCell(rowNumber, 3, comma_value(expansionGold) .. " " .. goldTextureString)
+  end
+  
+  rowNumber = miniTooltip:AddLine()
+  miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. "Total" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 2, totalSupplies)
+  miniTooltip:SetCell(rowNumber, 3, comma_value(totalGold) .. " " .. goldTextureString)
 
   finishMiniTooltip()
 end
@@ -837,11 +837,18 @@ function ShowFactionTooltip(cell, arg, ...)
   miniTooltip:SetCell(standingLine, 2, factionStandings[rep.Standing])
   
   if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
-    local standingLine = miniTooltip:AddLine()
+    local suppliesLine = miniTooltip:AddLine()
+    local goldLine = miniTooltip:AddLine()
+
+    local supplyChestValue = core.db.Expansions[faction.ExpansionId].SupplyChestValue or 0
+
     local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
     if rep.HasParagonReward then supplies = supplies - 1 end
-    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Supplies: " .. FONTEND)
-    miniTooltip:SetCell(standingLine, 2, supplies)
+    miniTooltip:SetCell(suppliesLine, 1, YELLOWFONT .. "Supplies: " .. FONTEND)
+    miniTooltip:SetCell(suppliesLine, 2, supplies)
+    
+    miniTooltip:SetCell(goldLine, 1, YELLOWFONT .. "Gold (Approx.): " .. FONTEND)
+    miniTooltip:SetCell(goldLine, 2, comma_value(supplies * supplyChestValue) .. " " .. goldTextureString)
 
     if rep.HasParagonReward then
       local suppliesAvailableLine = miniTooltip:AddLine()
@@ -919,6 +926,11 @@ function tablelength(T)
   local count = 0
   for _ in pairs(T) do count = count + 1 end
   return count
+end
+
+function comma_value(n) -- credit http://richard.warburton.it
+	local left,num,right = string.match(n,'^([^%d]*%d)(%d*)(.-)$')
+	return left..(num:reverse():gsub('(%d%d%d)','%1,'):reverse())..right
 end
 
 function round(x)

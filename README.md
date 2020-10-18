@@ -5,9 +5,7 @@ AltReps is an addon that allows you to track reputations across your characters 
   - Shows paragon reputation
   - Flags reputations from whom you may claim a supply chest
   - Lets you know how many supply chests each character has claimed
-  - Tracks how much gold you have earned from supply chests [1]
- 
-[1] The gold is only tracked for those supply chests that you open while you have the addon enabled
+  - Shows an approximation of the gold earned from opening supply chests
 
 ### How to use
 

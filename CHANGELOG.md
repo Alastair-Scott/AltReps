@@ -1,3 +1,7 @@
+### Changes: V2.1.0
+- Swapped gold tracking for an estimation approach due to issues with the accuracy and only tracking the gold earned while the addon is enabled
+- Added functionality to forget characters that you no longer wish to track
+
 ### Changes: V2.0.3, V2.0.4
 - Fixed libs v2
 
