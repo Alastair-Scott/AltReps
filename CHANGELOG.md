@@ -1,4 +1,4 @@
-### Changes: V2.1.1
+### Changes: V2.1.2
 - Fixed character scrolling bug
 
 ### Changes: V2.1.0
