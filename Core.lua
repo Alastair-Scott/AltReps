@@ -339,7 +339,6 @@ function core:GetTooltip(frame)
     if toon and toon.Show and toonId ~= thisToon then
       toonIndex = toonIndex + 1
       if toonIndex < ((core.db.Options.MaxCharacters - 1) + toonSliderValue) and toonIndex >= toonSliderValue then
-        chatMsg("Toon: " .. toonId .. ", Index: " .. toonIndex .. ", MaxCharacters: " .. core.db.Options.MaxCharacters .. ", Slider: " .. toonSliderValue)
         if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
         columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
         local toonname, toonserver = toonId:match('^(.*)[-](.*)$')

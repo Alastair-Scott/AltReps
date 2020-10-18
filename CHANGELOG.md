@@ -1,3 +1,6 @@
+### Changes: V2.1.3
+- Removed chat logging
+
 ### Changes: V2.1.2
 - Fixed character scrolling bug
 
