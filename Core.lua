@@ -839,8 +839,13 @@ function ShowFactionTooltip(cell, arg, ...)
   if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
     local suppliesLine = miniTooltip:AddLine()
     local goldLine = miniTooltip:AddLine()
-
-    local supplyChestValue = core.db.Expansions[faction.ExpansionId].SupplyChestValue or 0
+    
+    local supplyChestValue = 0
+    for _, expansion in pairs(core.db.Expansions) do 
+      if expansion.Id == faction.ExpansionId then
+        supplyChestValue = expansion.SupplyChestValue
+      end
+    end
 
     local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
     if rep.HasParagonReward then supplies = supplies - 1 end
