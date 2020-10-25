@@ -9,7 +9,8 @@ local pairs = pairs
 local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 
 local miniTooltip = nil
-local thisToon = UnitName("player") .. " - " .. GetRealmName()
+local thisServer = GetRealmName()
+local thisToon = UnitName("player") .. " - " .. thisServer
 local goldTextureString = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"
 local paragonLootTextureString = "|TInterface\\Icons\\Inv_misc_bag_10:0|t"
 
@@ -18,6 +19,20 @@ local FONTEND = FONT_COLOR_CODE_CLOSE
 local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
 local GOLDFONT = NORMAL_FONT_COLOR_CODE
 local BLUEFONT = "|cff00ffdd";
+
+local connectedRealms = {}
+
+local showCharacterServerOptions = {
+  [0] = "Show all",
+  [1] = "This server only",
+  [2] = "This connected realm"
+}
+
+local groupCharacterServerOptions = {
+  [0] = "Do not group",
+  [1] = "Server",
+  [2] = "Connected realm"
+}
 
 local factionStandings = {
   [0] = "Unknown",
@@ -32,13 +47,15 @@ local factionStandings = {
 }
 
 local defaultDB = {
-  DBVersion = 5,
+  DBVersion = 6,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
     ColourParagon = true,
     Debug = false,
-    MaxCharacters = 12
+    MaxCharacters = 12,
+    ShowCharactersFromServerOption = 0,
+    GroupCharactersByServerOption = 0
   },
   Toons = {},
   Expansions = {
@@ -230,6 +247,16 @@ function core:OnInitialize()
     AltRepsDB.Expansions = defaultDB.Expansions
     AltRepsDB.Options.FontSize = nil
     AltRepsDB.DBVersion = 5
+  elseif AltRepsDB.DBVersion < 6 then
+    AltRepsDB.Options.ShowCharactersFromServerOption  = defaultDB.Options.ShowCharactersFromServerOption 
+    AltRepsDB.Options.GroupCharactersByServerOption   = defaultDB.Options.GroupCharactersByServerOption
+    for toonId, toon in pairs(AltRepsDB.Toons) do
+      local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
+      toonserver = toonserver:gsub("%s", "")
+      toon.Server = toonserver
+      toon.ConnectedRealm = core:GetConnectedRealms(toonserver)
+    end
+    AltRepsDB.DBVersion = 6
   end
 
   core.db = AltRepsDB
@@ -300,6 +327,13 @@ function core:GetWindow()
         core.tooltip = nil
       end
     end)
+    f:SetScript("OnKeyDown", function(self,key)
+      if key == "ESCAPE" then
+        f:SetPropagateKeyboardInput(false)
+        f:Hide()
+      end
+    end)
+    f:EnableKeyboard(true)
     core:SkinFrame(f,f:GetName())
     core.frame = f
   end
@@ -322,23 +356,13 @@ function core:GetTooltip(frame)
   local hasHorde = "xyz"
 
   local toonIndex = 0
-  local toonSliderValue = (core.slider and core.slider.CurrentValue + 1) or 2
+  local toonSliderValue = core.slider and core.slider.CurrentValue or 1
   local currentToon = core.db.Toons[thisToon]
-
-  if currentToon and currentToon.Show then
-    toonIndex = toonIndex + 1
-    if currentToon.Faction == "Alliance" then hasAlliance = currentToon.Faction elseif currentToon.Faction == "Horde" then hasHorde = currentToon.Faction end;
-    columns[thisToon] = columns[thisToon] or tooltip:AddColumn("CENTER")
-    local toonname, toonserver = thisToon:match('^(.*)[-](.*)$')
-    tooltip:SetCell(header, columns[thisToon], ClassColorise(currentToon.Class, toonname), "CENTER")
-    tooltip:SetCellScript(header, columns[thisToon], "OnEnter", ShowToonTooltip, thisToon)
-    tooltip:SetCellScript(header, columns[thisToon], "OnLeave", CloseTooltips)
-  end
   
-  for toonId, toon in orderedPairs(core.db.Toons) do
-    if toon and toon.Show and toonId ~= thisToon then
+  for toonId, toon in sortedPairs(core.db.Toons, characterSort, characterFilter) do
+    if toon and toon.Show then
       toonIndex = toonIndex + 1
-      if toonIndex < ((core.db.Options.MaxCharacters - 1) + toonSliderValue) and toonIndex >= toonSliderValue then
+      if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
         if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
         columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
         local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
@@ -348,9 +372,9 @@ function core:GetTooltip(frame)
       end
     end
   end
-  for _, expansion in orderedPairs(core.db.Expansions) do
+  for _, expansion in sortedPairs(core.db.Expansions) do
     local hasExpansionRowBeenAdded = false
-    for factionId, faction in orderedPairs(core.db.Factions) do
+    for factionId, faction in sortedPairs(core.db.Factions) do
       if (faction.Show and expansion.Id == faction.ExpansionId and (string.find(faction.For, hasAlliance) or string.find(faction.For, hasHorde))) then
         if not hasExpansionRowBeenAdded then
           local expansionRow = tooltip:AddLine();    
@@ -399,11 +423,12 @@ function core:GetTooltip(frame)
   
   local w,h = tooltip:GetSize()
   frame:SetSize(w*tooltip:GetScale(),(h+20)*tooltip:GetScale())
-  core:SkinFrame(tooltip,"SavedInstancesTooltip")
+  core:SkinFrame(tooltip,"AltRepsTooltip")
   LibQTip.layoutCleaner:CleanupLayouts()
   tooltip:ClearAllPoints()
   tooltip:SetPoint("TOPLEFT",frame, "TOPLEFT", 0, -20)
   tooltip:SetFrameLevel(frame:GetFrameLevel()+1)
+  core.tooltip.OnRelease = function() core.tooltip = nil end
   tooltip:Show()
 
   local toonCount = tablelength(core.db.Toons)
@@ -471,26 +496,26 @@ function core:ToonInit()
   core.db.Toons[thisToon] = ti
   ti.LClass, ti.Class = UnitClass("player")
   ti.Faction, ti.LFaction = UnitFactionGroup("player")
+  ti.Server = thisServer
+  ti.ConnectedRealm = core:GetConnectedRealms(thisServer)
 end
 
 function core:UpdateReps()
   debug("UpdateReps: Start")
   local toon = core.db.Toons[thisToon]
   for factionId, _ in pairs(core.db.Factions) do
-    if type(factionId) == "number" then
-      local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
-      local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
-      if not toon.Reps then toon.Reps = {} end
-      if not (atWarWith and not canToggleAtWar) and name then
-        toon.Reps[factionId] = {
-          Current = barValue - barMin,
-          Max = barMax - barMin,
-          Standing = standingID,
-          HasParagonReward = hasRewardPending,
-          ParagonValue = currentValue,
-          ParagonThreshold = threshold
-        }
-      end
+    local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
+    local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
+    if not toon.Reps then toon.Reps = {} end
+    if not (atWarWith and not canToggleAtWar) and name then
+      toon.Reps[factionId] = {
+        Current = barValue - barMin,
+        Max = barMax - barMin,
+        Standing = standingID,
+        HasParagonReward = hasRewardPending,
+        ParagonValue = currentValue,
+        ParagonThreshold = threshold
+      }
     end
   end
   core:UpdateTooltip()
@@ -504,6 +529,7 @@ function core:ToggleVisibility(info)
     core:GetWindow()
     core:GetTooltip(core.frame)
     core.frame:Show()
+    core.frame:SetPropagateKeyboardInput(true)
   end
 end
 
@@ -670,6 +696,30 @@ function core:BuildOptions()
               core:UpdateTooltip()
             end,
           },
+          ShowCharactersFromServers = {
+            type = "select",
+            values = showCharacterServerOptions,
+            order = 20,
+            name = "Characters to show",
+            desc = "Should we show characters based on their server",
+            get = function(info) return core.db.Options.ShowCharactersFromServerOption end,
+            set = function(info, value)
+              core.db.Options.ShowCharactersFromServerOption = value
+              core:UpdateTooltip()
+            end,
+          },
+          GroupCharactersByServers = {
+            type = "select",
+            values = groupCharacterServerOptions,
+            order = 30,
+            name = "Character grouping",
+            desc = "Should we group characters based on their server",
+            get = function(info) return core.db.Options.GroupCharactersByServerOption end,
+            set = function(info, value)
+              core.db.Options.GroupCharactersByServerOption = value
+              core:UpdateTooltip()
+            end,
+          },
           CharactersHeader = {
             type = "header",
             order = 100,
@@ -680,7 +730,7 @@ function core:BuildOptions()
     },
   }
   local calculatedOrder = options.args.Factions.args.FactionsHeader.order
-  for _ , expansion in orderedPairs(core.db.Expansions) do
+  for _ , expansion in sortedPairs(core.db.Expansions) do
     calculatedOrder = calculatedOrder + 1
     options.args.Factions.args["Expansion"..expansion.Id] = {
       type = "group",
@@ -688,7 +738,7 @@ function core:BuildOptions()
       name = expansion.Name,
       args = {},
     }
-    for factionId, faction in orderedPairs(core.db.Factions) do
+    for factionId, faction in sortedPairs(core.db.Factions) do
       if expansion.Id == faction.ExpansionId then
         calculatedOrder = calculatedOrder + 1
         options.args.Factions.args["Expansion"..expansion.Id].args["Faction"..factionId] = {
@@ -708,7 +758,7 @@ function core:BuildOptions()
   end
 
   local calculatedCharactersOrder = options.args.Characters.args.CharactersHeader.order
-  for characterName, character in orderedPairs(core.db.Toons) do
+  for characterName, character in sortedPairs(core.db.Toons) do
     calculatedCharactersOrder = calculatedCharactersOrder + 1
     local formattedName = ClassColorise(character.Class, characterName)
     options.args.Characters.args[formattedName] = {
@@ -765,6 +815,16 @@ function core:BuildOptions()
   end
 end
 
+function core:GetConnectedRealms(server)
+  if server and not connectedRealms[server] then
+    local servers = GetAutoCompleteRealms(server)
+    for _, v in orderedPairs(servers) do
+      connectedRealms[v] = table.concat(servers, ';')
+    end
+  end
+  return connectedRealms[server]
+end
+
 function ShowToonTooltip(cell, arg, ...)
   local toonId = arg
   if not toonId then return end
@@ -787,9 +847,9 @@ function ShowToonTooltip(cell, arg, ...)
   miniTooltip:SetCell(rowNumber, 3, YELLOWFONT .. "Gold earned (Approx.)" .. FONTEND)
 
   local totalSupplies, totalGold = 0, 0
-  for expansionIndex, expansion in orderedPairs(core.db.Expansions) do
+  for expansionIndex, expansion in sortedPairs(core.db.Expansions) do
     local expansionSupplies, expansionGold = 0, 0
-    for factionId, faction in orderedPairs(core.db.Factions) do
+    for factionId, faction in sortedPairs(core.db.Factions) do
       if expansion.Id == faction.ExpansionId then
         local rep = toon.Reps[factionId]
         if rep and rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
@@ -984,4 +1044,75 @@ function orderedPairs(t)
   -- Equivalent of the pairs() function on tables. Allows to iterate
   -- in order
   return orderedNext, t, nil
+end
+
+function sortedPairs(t, sortFunction, filterFunction)
+  local a = {}
+  for n in pairs(t) do 
+    if filterFunction == nil or filterFunction(n) then
+      table.insert(a, n)
+    end
+  end
+  table.sort(a, sortFunction)
+  local i = 0      -- iterator variable
+  local iter = function ()   -- iterator function
+    i = i + 1
+    if a[i] == nil then return nil
+    else return a[i], t[a[i]]
+    end
+  end
+  return iter
+end
+
+function characterSort(characterKey1, characterKey2)  
+  local toon1 = core.db.Toons[characterKey1]
+  local toon2 = core.db.Toons[characterKey2]
+
+  if characterKey1 == thisToon then
+    return true
+  end
+  if characterKey2 == thisToon then
+    return false
+  end
+
+  if core.db.Options.GroupCharactersByServerOption == 1 then
+    if toon1.Server ~= toon2.Server then
+      if toon1.Server == thisServer then
+        return true
+      end
+      if toon2.Server == thisServer then
+        return false
+      end
+      return toon1.Server < toon2.Server
+    end
+  end
+  
+  if core.db.Options.GroupCharactersByServerOption == 2 then
+    local thisConnectedRealm = core:GetConnectedRealms(thisServer)
+    if toon1.ConnectedRealm ~= toon2.ConnectedRealm then
+      if toon1.ConnectedRealm == thisConnectedRealm then
+        return true
+      end
+      if toon2.ConnectedRealm == thisConnectedRealm  then
+        return false
+      end
+      return toon1.ConnectedRealm < toon2.ConnectedRealm
+    end
+  end
+
+  return characterKey1 < characterKey2
+end
+
+function characterFilter(characterKey)
+  local toon = core.db.Toons[characterKey]
+  if core.db.Options.ShowCharactersFromServerOption == 1 then
+    if toon.Server ~= thisServer then return false end
+  end
+
+  if core.db.Options.ShowCharactersFromServerOption == 2 then
+    local thisConnectedRealm = core:GetConnectedRealms(thisServer)
+    if toon.ConnectedRealm ~= thisConnectedRealm then return false end
+  end
+
+  return true
 end

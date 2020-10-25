@@ -1,3 +1,8 @@
+### Changes: V2.2.0
+- Added ability to filter characters by server or connected
+- Added ability to group characters by server or connected realm
+- Fixed bug with libs
+
 ### Changes: V2.1.3
 - Removed chat logging
 
