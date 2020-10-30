@@ -1,3 +1,8 @@
+### Changes: V2.3.0
+- Added icon to reputation panel of character window (Can be hidden in the settings)
+- Added ability to add a custom sort order to your toons
+- Added tooltip to icons to give more info
+
 ### Changes: V2.2.0
 - Added ability to filter characters by server or connected
 - Added ability to group characters by server or connected realm

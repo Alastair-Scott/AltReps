@@ -54,6 +54,7 @@ local defaultDB = {
     ColourParagon = true,
     Debug = false,
     MaxCharacters = 12,
+    ReputationIcon = true,
     ShowCharactersFromServerOption = 0,
     GroupCharactersByServerOption = 0
   },
@@ -248,13 +249,15 @@ function core:OnInitialize()
     AltRepsDB.Options.FontSize = nil
     AltRepsDB.DBVersion = 5
   elseif AltRepsDB.DBVersion < 6 then
-    AltRepsDB.Options.ShowCharactersFromServerOption  = defaultDB.Options.ShowCharactersFromServerOption 
-    AltRepsDB.Options.GroupCharactersByServerOption   = defaultDB.Options.GroupCharactersByServerOption
+    AltRepsDB.Options.ShowCharactersFromServerOption = defaultDB.Options.ShowCharactersFromServerOption 
+    AltRepsDB.Options.GroupCharactersByServerOption = defaultDB.Options.GroupCharactersByServerOption
+    AltRepsDB.Options.ReputationIcon = defaultDB.Options.ReputationIcon
     for toonId, toon in pairs(AltRepsDB.Toons) do
       local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
       toonserver = toonserver:gsub("%s", "")
       toon.Server = toonserver
       toon.ConnectedRealm = core:GetConnectedRealms(toonserver)
+      toon.SortOrder = 25
     end
     AltRepsDB.DBVersion = 6
   end
@@ -270,12 +273,22 @@ function core:OnInitialize()
   core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
   core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
 
+  core.infoTooltip = LibQTip:Acquire("AltRepsInfoTooltip", 1, "LEFT")
+  core.infoTooltip:AddHeader(GOLDFONT .. 'AltReps' .. FONTEND)
+  core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Left click: " .. FONTEND .. "Display character data")
+  core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Right click: " .. FONTEND .. "Open the configuration menu")
+
   addon.dataobject = addon.LDB and addon.LDB:NewDataObject("AltReps", {
     text = "AR",
     type = "launcher",
     icon = "Interface\\Addons\\AltReps\\icon.tga",
-    OnEnter = function(frame) end,
-    OnLeave = function(frame) end,
+    OnEnter = function(frame)
+      core.infoTooltip:SmartAnchorTo(frame)
+      core.infoTooltip:Show()
+     end,
+    OnLeave = function(frame)
+      core.infoTooltip:Hide()
+    end,
     OnClick = function(frame, button)
       if button == "RightButton" then
         core:ShowConfig()
@@ -288,6 +301,29 @@ function core:OnInitialize()
     addon.icon:Register(addonName, addon.dataobject, core.db.MinimapIcon)
     addon.icon:Refresh(addonName)
   end
+
+  local repFrame = _G["ReputationFrame"]
+  local repIcon = CreateFrame("Button", "AltRepsReputationWindowButton", repFrame)
+  repIcon:SetSize(24, 24)
+  repIcon:SetPoint("TOPRIGHT", -17, -29)
+  repIcon:SetNormalTexture("Interface\\Addons\\AltReps\\icon.tga")
+	repIcon:SetHighlightTexture("Interface\\BUTTONS\\UI-Common-MouseHilight")
+  repIcon:SetScript("OnEnter", function (self) 
+    core.infoTooltip:SmartAnchorTo(self)
+    core.infoTooltip:Show()
+  end)
+	repIcon:SetScript("OnLeave", function (self)
+    core.infoTooltip:Hide()
+  end)
+  repIcon:SetScript("OnMouseUp", function (self, button)
+    if button == "RightButton" then
+      core:ShowConfig()
+    else
+      core:ToggleVisibility()
+    end
+  end)
+  core.repIcon = repIcon
+  core:SetReputationIconVisibility(core.db.Options.ReputationIcon)
 end
 
 function core:OnEnable()
@@ -492,7 +528,7 @@ function core:UpdateTooltip()
 end
 
 function core:ToonInit()
-  local ti = core.db.Toons[thisToon] or { Show = true }
+  local ti = core.db.Toons[thisToon] or { Show = true, SortOrder = 25 }
   core.db.Toons[thisToon] = ti
   ti.LClass, ti.Class = UnitClass("player")
   ti.Faction, ti.LFaction = UnitFactionGroup("player")
@@ -625,6 +661,17 @@ function core:BuildOptions()
             set = function(info, value)
               core.db.MinimapIcon.hide = not value
               addon.icon:Refresh(addonName)
+            end,
+          },
+          ReputationIcon = {
+            type = "toggle",
+            name = "Show reputation tab button",
+            desc = "Show the AltReps button on the reputation tab",
+            order = 4,
+            get = function(info) return core.db.Options.ReputationIcon end,
+            set = function(info, value)
+              core.db.Options.ReputationIcon = value
+              core:SetReputationIconVisibility(value)
             end,
           },
           GeneralHeader = {
@@ -783,6 +830,22 @@ function core:BuildOptions()
             core:UpdateTooltip()
           end,
         },
+        SortOrder = {
+          type = "range",
+          min = 1,
+          max = 25,
+          step = 1,
+          order = 20,
+          name = "Sort order",
+          desc = "What is the priority of displaying this character? (1 - Highest priority, 25 - Lowest priority)",
+          get = function(info)
+            return character.SortOrder 
+          end,
+          set = function(info, value)
+            character.SortOrder = value
+            core:UpdateTooltip()
+          end,
+        },
         AdvancedHeader = {
           order = 100,
           type = "header",
@@ -818,11 +881,21 @@ end
 function core:GetConnectedRealms(server)
   if server and not connectedRealms[server] then
     local servers = GetAutoCompleteRealms(server)
-    for _, v in orderedPairs(servers) do
+    for _, v in sortedPairs(servers) do
       connectedRealms[v] = table.concat(servers, ';')
     end
   end
   return connectedRealms[server]
+end
+
+function core:SetReputationIconVisibility(visibilityState)
+  if core.repIcon then
+    if visibilityState then
+      core.repIcon:Show()
+    else
+      core.repIcon:Hide()
+    end
+  end
 end
 
 function ShowToonTooltip(cell, arg, ...)
@@ -1002,50 +1075,6 @@ function round(x)
   return x>=0 and math.floor(x+0.5) or math.ceil(x-0.5)
 end
 
-function __genOrderedIndex( t )
-  local orderedIndex = {}
-  for key in pairs(t) do
-      table.insert( orderedIndex, key )
-  end
-  table.sort( orderedIndex )
-  return orderedIndex
-end
-
-function orderedNext(t, state)
-  -- Equivalent of the next function, but returns the keys in the alphabetic
-  -- order. We use a temporary ordered key table that is stored in the
-  -- table being iterated.
-
-  local key = nil
-  --print("orderedNext: state = "..tostring(state) )
-  if state == nil then
-      -- the first time, generate the index
-      t.__orderedIndex = __genOrderedIndex( t )
-      key = t.__orderedIndex[1]
-  else
-      -- fetch the next value
-      for i = 1,table.getn(t.__orderedIndex) do
-          if t.__orderedIndex[i] == state then
-              key = t.__orderedIndex[i+1]
-          end
-      end
-  end
-
-  if key then
-      return key, t[key]
-  end
-
-  -- no more value to return, cleanup
-  t.__orderedIndex = nil
-  return
-end
-
-function orderedPairs(t)
-  -- Equivalent of the pairs() function on tables. Allows to iterate
-  -- in order
-  return orderedNext, t, nil
-end
-
 function sortedPairs(t, sortFunction, filterFunction)
   local a = {}
   for n in pairs(t) do 
@@ -1098,6 +1127,10 @@ function characterSort(characterKey1, characterKey2)
       end
       return toon1.ConnectedRealm < toon2.ConnectedRealm
     end
+  end
+
+  if toon1.SortOrder ~= toon2.SortOrder then
+    return toon1.SortOrder < toon2.SortOrder
   end
 
   return characterKey1 < characterKey2
