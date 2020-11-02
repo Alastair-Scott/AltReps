@@ -1,3 +1,8 @@
+### Changes: V2.4.0
+- Added more reputations to the addon (They're currently hidden but can be shown in the settings)
+- Added new tooltip to header to give information about all characters
+- Updated scrollbar styling to make it stand out more
+
 ### Changes: V2.3.0
 - Added icon to reputation panel of character window (Can be hidden in the settings)
 - Added ability to add a custom sort order to your toons

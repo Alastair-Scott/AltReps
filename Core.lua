@@ -47,13 +47,14 @@ local factionStandings = {
 }
 
 local defaultDB = {
-  DBVersion = 6,
+  DBVersion = 7,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
     ColourParagon = true,
     Debug = false,
     MaxCharacters = 12,
+    MaxExpansions = 3,
     ReputationIcon = true,
     ShowCharactersFromServerOption = 0,
     GroupCharactersByServerOption = 0
@@ -63,12 +64,74 @@ local defaultDB = {
     [0] = {
       Name = "Battle for Azeroth",
       Id = 8,
-      SupplyChestValue = 4000
+      SupplyChestValue = 4000,
+      Show = true
     },
     [1] = {
       Name = "Legion",
       Id = 7,
-      SupplyChestValue = 750
+      SupplyChestValue = 750,
+      Show = true
+    },
+    [2] = {
+      Name = "Warlords of Draenor",
+      Id = 6,
+      Show = false
+    },
+    [3] = {
+      Name = "Mists of Pandaria",
+      Id = 5,
+      Show = false
+    },
+    [4] = {
+      Name = "Cataclysm",
+      Id = 4,
+      Show = false
+    },
+    [5] = {
+      Name = "Wrath of the Lich King",
+      Id = 3,
+      Show = false
+    },
+    [6] = {
+      Name = "The Burning Crusade",
+      Id = 2,
+      Show = false
+    },
+    [7] = {
+      Name = "Vanilla",
+      Id = 1,
+      Show = false
+    },
+    [8] = {
+      Name = "Vanilla - Steamwheedle Cartel",
+      Id = 1.1,
+      Show = false
+    },
+    [9] = {
+      Name = "Vanilla - Alliance",
+      Id = 1.2,
+      Show = false
+    },
+    [10] = {
+      Name = "Vanilla - Horde",
+      Id = 1.3,
+      Show = false
+    },
+    [11] = {
+      Name = "Vanilla - Alliance Forces",
+      Id = 1.4,
+      Show = false
+    },
+    [12] = {
+      Name = "Vanilla - Horde Forces",
+      Id = 1.5,
+      Show = false
+    },
+    [13] = {
+      Name = "Other",
+      Id = 0,
+      Show = false
     }
   },
   Factions = {
@@ -215,7 +278,685 @@ local defaultDB = {
         Show = true,
         ExpansionId = 7,
         For = "Alliance;Horde"
-    }
+    },
+    [1850] = {
+        Name = "The Saberstalkers",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance;Horde"
+    },
+    [1849] = {
+        Name = "Order of the Awakened",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance;Horde"
+    },
+    [1847] = {
+        Name = "Hand of the Prophet",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance"
+    },
+    [1848] = {
+        Name = "Vol'jin's Headhunters",
+        Show = false,
+        ExpansionId = 6,
+        For = "Horde"
+    },
+    [1731] = {
+        Name = "Council of Exarchs",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance"
+    },
+    [1445] = {
+        Name = "Frostwolf Orcs",
+        Show = false,
+        ExpansionId = 6,
+        For = "Horde"
+    },
+    [1515] = {
+        Name = "Arakkoa Outcasts",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance;Horde"
+    },
+    [1711] = {
+        Name = "Steamwheedle Preservation Society",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance;Horde"
+    },
+    [1681] = {
+        Name = "Vol'jin's Spear",
+        Show = false,
+        ExpansionId = 6,
+        For = "Horde"
+    },
+    [1682] = {
+        Name = "Wrynn's Vanguard",
+        Show = false,
+        ExpansionId = 6,
+        For = "Alliance"
+    },
+    [1302] = {
+        Name = "The Anglers",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1341] = {
+        Name = "The August Celestials",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1269] = {
+        Name = "Golden Lotus",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1387] = {
+        Name = "Kirin Tor Offensive",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance"
+    },
+    [1388] = {
+        Name = "Sunreaver Onslaught",
+        Show = false,
+        ExpansionId = 5,
+        For = "Horde"
+    },
+    [1337] = {
+        Name = "The Klaxx",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1345] = {
+        Name = "The Lorewalkers",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1376] = {
+        Name = "Operation: Shieldwall",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance"
+    },
+    [1375] = {
+        Name = "Dominance Offensive",
+        Show = false,
+        ExpansionId = 5,
+        For = "Horde"
+    },
+    [1271] = {
+        Name = "Order of the Cloud Serpent",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1492] = {
+        Name = "Emperor Shaohao",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1270] = {
+        Name = "Shado-Pan",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1435] = {
+        Name = "Shado-Pan Assault",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1272] = {
+        Name = "The Tillers",
+        Show = false,
+        ExpansionId = 5,
+        For = "Alliance;Horde"
+    },
+    [1204] = {
+        Name = "Avengers of Hyjal",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance;Horde"
+    },
+    [1158] = {
+        Name = "Guardians of Hyjal",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance;Horde"
+    },
+    [1171] = {
+        Name = "Therazane",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance;Horde"
+    },
+    [1173] = {
+        Name = "Ramkahen",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance;Horde"
+    },
+    [1135] = {
+        Name = "The Earthen Ring",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance;Horde"
+    },
+    [1174] = {
+        Name = "Wildhammer Clan",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance"
+    },
+    [1172] = {
+        Name = "Dragonmaw Clan",
+        Show = false,
+        ExpansionId = 4,
+        For = "Horde"
+    },
+    [1177] = {
+        Name = "Baradin's Wardens",
+        Show = false,
+        ExpansionId = 4,
+        For = "Alliance"
+    },
+    [1178] = {
+        Name = "Hellscream's Reach",
+        Show = false,
+        ExpansionId = 4,
+        For = "Horde"
+    },
+    [1052] = {
+        Name = "Horde Expedition",
+        Show = false,
+        ExpansionId = 3,
+        For = "Horde"
+    },
+    [1067] = {
+        Name = "The Hand of Vengeance",
+        Show = false,
+        ExpansionId = 3,
+        For = "Horde"
+    },
+    [1085] = {
+        Name = "Warsong Offensive",
+        Show = false,
+        ExpansionId = 3,
+        For = "Horde"
+    },
+    [1064] = {
+        Name = "The Taunka",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1124] = {
+        Name = "The Sunreavers",
+        Show = false,
+        ExpansionId = 3,
+        For = "Horde"
+    },
+    [1037] = {
+        Name = "Alliance Vanguard",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance"
+    },
+    [1050] = {
+        Name = "Valiance Expedition",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance"
+    },
+    [1068] = {
+        Name = "Explorers' League",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance"
+    },
+    [1126] = {
+        Name = "The Frostborn",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance"
+    },
+    [1094] = {
+        Name = "The Silver Covenant",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance"
+    },
+    [1073] = {
+        Name = "The Kalu'ak",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1104] = {
+        Name = "The Frenzyheart Tribe",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1105] = {
+        Name = "The Oracles",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1119] = {
+        Name = "The Sons of Hodir",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1091] = {
+        Name = "The Wyrmrest Accord",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1090] = {
+        Name = "Kirin Tor",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1106] = {
+        Name = "Argent Crusade",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1098] = {
+        Name = "Knights of the Ebon Blade",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1156] = {
+        Name = "The Ashen Verdict",
+        Show = false,
+        ExpansionId = 3,
+        For = "Alliance;Horde"
+    },
+    [1015] = {
+        Name = "Netherwing",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [942] = {
+        Name = "Cenarion Expedition",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [1031] = {
+        Name = "Sha'tari Skyguard",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [941] = {
+        Name = "The Mag'har",
+        Show = false,
+        ExpansionId = 2,
+        For = "Horde"
+    },
+    [933] = {
+        Name = "The Consortium",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [934] = {
+        Name = "The Scryers",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [932] = {
+        Name = "The Aldor",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [989] = {
+        Name = "Keepers of Time",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [935] = {
+        Name = "The Sha'tar",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [1038] = {
+        Name = "Ogri'la",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [970] = {
+        Name = "Sporeggar",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [990] = {
+        Name = "The Scale of the Sands",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [1077] = {
+        Name = "Shattered Sun Offensive",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [978] = {
+        Name = "Kurenai",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance"
+    },
+    [1011] = {
+        Name = "Lower City",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [1012] = {
+        Name = "Ashtongue Deathsworn",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [947] = {
+        Name = "Thrallmar",
+        Show = false,
+        ExpansionId = 2,
+        For = "Horde"
+    },
+    [967] = {
+        Name = "The Violet Eye",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance;Horde"
+    },
+    [946] = {
+        Name = "Honor Hold",
+        Show = false,
+        ExpansionId = 2,
+        For = "Alliance"
+    },
+    [922] = {
+        Name = "Tranquillien",
+        Show = false,
+        ExpansionId = 2,
+        For = "Horde"
+    },
+    [349] = {
+        Name = "Ravenholdt",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [87] = {
+        Name = "Bloodsail Buccaneers",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [910] = {
+        Name = "Brood of Nozdormu",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [529] = {
+        Name = "Argent Dawn",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [749] = {
+        Name = "Hydraxian Waterlords",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [609] = {
+        Name = "Cenarion Circle",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [59] = {
+        Name = "Thorium Brotherhood",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [576] = {
+        Name = "Timbermaw Hold",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [270] = {
+        Name = "Zandalar Tribe",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [909] = {
+        Name = "Darkmoon Faire",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [809] = {
+        Name = "Shen'dralar",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [92] = {
+        Name = "Gelkis Clan Centaur",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [93] = {
+        Name = "Magram Clan Centaur",
+        Show = false,
+        ExpansionId = 1,
+        For = "Alliance;Horde"
+    },
+    [21] = {
+        Name = "Booty Bay",
+        Show = false,
+        ExpansionId = 1.1,
+        For = "Alliance;Horde"
+    },
+    [369] = {
+        Name = "Gadgetzan",
+        Show = false,
+        ExpansionId = 1.1,
+        For = "Alliance;Horde"
+    },
+    [470] = {
+        Name = "Ratchet",
+        Show = false,
+        ExpansionId = 1.1,
+        For = "Alliance;Horde"
+    },
+    [577] = {
+        Name = "Everlook",
+        Show = false,
+        ExpansionId = 1.1,
+        For = "Alliance;Horde"
+    },
+    [1134] = {
+        Name = "Gilneas",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [1353] = {
+        Name = "Tushui Pandaren",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [47] = {
+        Name = "Ironforge",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [72] = {
+        Name = "Stormwind",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [54] = {
+        Name = "Gnomeregan",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [69] = {
+        Name = "Darnassus",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [930] = {
+        Name = "Exodar",
+        Show = false,
+        ExpansionId = 1.2,
+        For = "Alliance"
+    },
+    [911] = {
+        Name = "Silvermoon City",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [81] = {
+        Name = "Thunder Bluff",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [1133] = {
+        Name = "Bilgewater Cartel",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [1352] = {
+        Name = "Huojin Pandaren",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [530] = {
+        Name = "Darkspear Trolls",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [76] = {
+        Name = "Orgrimmar",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [68] = {
+        Name = "Undercity",
+        Show = false,
+        ExpansionId = 1.3,
+        For = "Horde"
+    },
+    [1682] = {
+        Name = "Wrynn's Vanguard",
+        Show = false,
+        ExpansionId = 1.4,
+        For = "Alliance"
+    },
+    [890] = {
+        Name = "Silverwing Sentinels",
+        Show = false,
+        ExpansionId = 1.4,
+        For = "Alliance"
+    },
+    [509] = {
+        Name = "The League of Arathor",
+        Show = false,
+        ExpansionId = 1.4,
+        For = "Alliance"
+    },
+    [730] = {
+        Name = "Stormpike Guard",
+        Show = false,
+        ExpansionId = 1.4,
+        For = "Alliance"
+    },
+    [1681] = {
+        Name = "Vol'jin's Spear",
+        Show = false,
+        ExpansionId = 1.5,
+        For = "Horde"
+    },
+    [510] = {
+        Name = "The Defilers",
+        Show = false,
+        ExpansionId = 1.5,
+        For = "Horde"
+    },
+    [729] = {
+        Name = "Frostwolf Clan",
+        Show = false,
+        ExpansionId = 1.5,
+        For = "Horde"
+    },
+    [889] = {
+        Name = "Warsong Outriders",
+        Show = false,
+        ExpansionId = 1.5,
+        For = "Horde"
+    },
+    [589] = {
+        Name = "Wintersaber Trainers",
+        Show = false,
+        ExpansionId = 0,
+        For = "Alliance;Horde"
+    },
+    [70] = {
+        Name = "Syndicate",
+        Show = false,
+        ExpansionId = 0,
+        For = "Alliance;Horde"
+    },
   }
 }
 
@@ -260,6 +1001,11 @@ function core:OnInitialize()
       toon.SortOrder = 25
     end
     AltRepsDB.DBVersion = 6
+  elseif AltRepsDB.DBVersion < 7 then
+    AltRepsDB.Expansions = defaultDB.Expansions
+    AltRepsDB.Factions = defaultDB.Factions
+    AltRepsDB.Options.MaxExpansions = defaultDB.Options.MaxExpansions
+    AltRepsDB.DBVersion = 7
   end
 
   core.db = AltRepsDB
@@ -273,7 +1019,7 @@ function core:OnInitialize()
   core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
   core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
 
-  core.infoTooltip = LibQTip:Acquire("AltRepsInfoTooltip", 1, "LEFT")
+  core.infoTooltip = LibQTip:Acquire("AltRepsInfoTooltip", 2, "LEFT")
   core.infoTooltip:AddHeader(GOLDFONT .. 'AltReps' .. FONTEND)
   core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Left click: " .. FONTEND .. "Display character data")
   core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Right click: " .. FONTEND .. "Open the configuration menu")
@@ -369,6 +1115,28 @@ function core:GetWindow()
         f:Hide()
       end
     end)
+    f:EnableMouseWheel(true);
+    f:SetScript("OnMouseWheel", function(self, delta)
+      local ctrlDown  = IsControlKeyDown();
+      local slider
+      if ctrlDown then 
+        slider = core.slider_horizontal 
+      else
+        slider = core.slider_vertical
+      end
+
+      if slider and slider:IsShown() then
+        local currentValue = slider:GetValue()
+        local minValue, maxValue = slider:GetMinMaxValues()
+        local stepValue = self.step or 1
+      
+        if delta < 0 and currentValue < maxValue then
+          slider:SetValue(min(maxValue, currentValue + stepValue))
+        elseif delta > 0 and currentValue > minValue then
+          slider:SetValue(max(minValue, currentValue - stepValue))
+        end
+      end
+    end)
     f:EnableKeyboard(true)
     core:SkinFrame(f,f:GetName())
     core.frame = f
@@ -386,13 +1154,16 @@ function core:GetTooltip(frame)
   core.tooltip = tooltip 
   
   local header = tooltip:AddHeader('AltReps')
+  tooltip:SetCellScript(header, 1, "OnEnter", ShowOverallTooltip)
   local columns = localarr("columns")
   local rows = localarr("rows")
   local hasAlliance = "xyz"
   local hasHorde = "xyz"
 
   local toonIndex = 0
-  local toonSliderValue = core.slider and core.slider.CurrentValue or 1
+  local toonSliderValue = core.slider_horizontal and core.slider_horizontal.CurrentValue or 1
+  local expansionIndex = 0
+  local expansionSliderValue = core.slider_vertical and core.slider_vertical.CurrentValue or 1
   local currentToon = core.db.Toons[thisToon]
   
   for toonId, toon in sortedPairs(core.db.Toons, characterSort, characterFilter) do
@@ -409,15 +1180,20 @@ function core:GetTooltip(frame)
     end
   end
   for _, expansion in sortedPairs(core.db.Expansions) do
-    local hasExpansionRowBeenAdded = false
-    for factionId, faction in sortedPairs(core.db.Factions) do
-      if (faction.Show and expansion.Id == faction.ExpansionId and (string.find(faction.For, hasAlliance) or string.find(faction.For, hasHorde))) then
-        if not hasExpansionRowBeenAdded then
-          local expansionRow = tooltip:AddLine();    
-          tooltip:SetCell(expansionRow, 1, GOLDFONT .. expansion.Name .. FONTEND)
-          hasExpansionRowBeenAdded = true
+    if expansion and expansion.Show then
+      expansionIndex = expansionIndex + 1
+      if expansionIndex < (core.db.Options.MaxExpansions + expansionSliderValue) and expansionIndex >= expansionSliderValue then
+        local hasExpansionRowBeenAdded = false
+        for factionId, faction in sortedPairs(core.db.Factions) do
+          if (faction.Show and expansion.Id == faction.ExpansionId and (string.find(faction.For, hasAlliance) or string.find(faction.For, hasHorde))) then
+            if not hasExpansionRowBeenAdded then
+              local expansionRow = tooltip:AddLine();    
+              tooltip:SetCell(expansionRow, 1, GOLDFONT .. expansion.Name .. FONTEND)
+              hasExpansionRowBeenAdded = true
+            end
+            rows[factionId] = rows[factionId] or tooltip:AddLine();
+          end
         end
-        rows[factionId] = rows[factionId] or tooltip:AddLine();
       end
     end
   end
@@ -456,7 +1232,6 @@ function core:GetTooltip(frame)
       hi = true
     end
   end
-  
   local w,h = tooltip:GetSize()
   frame:SetSize(w*tooltip:GetScale(),(h+20)*tooltip:GetScale())
   core:SkinFrame(tooltip,"AltRepsTooltip")
@@ -465,58 +1240,94 @@ function core:GetTooltip(frame)
   tooltip:SetPoint("TOPLEFT",frame, "TOPLEFT", 0, -20)
   tooltip:SetFrameLevel(frame:GetFrameLevel()+1)
   core.tooltip.OnRelease = function() core.tooltip = nil end
+  -- tooltip:UpdateScrolling(300)
   tooltip:Show()
+
+  local w,h = frame:GetSize()
 
   local toonCount = tablelength(core.db.Toons)
   if toonCount > core.db.Options.MaxCharacters then
-    core:GetSlider(frame, toonCount)
-  elseif core.slider and core.slider:IsShown() then
-    core.slider:Hide()
+    core:GetSliderHorizontal(frame, toonCount, w, h)
+  elseif core.slider_horizontal and core.slider_horizontal:IsShown() then
+    core.slider_horizontal:Hide()
+  end
+
+  local expansionCount = tablelength(core.db.Expansions)
+  if expansionCount > core.db.Options.MaxExpansions then
+    core:GetSliderVertical(frame, expansionCount, w, h)
+  elseif core.slider_vertical and core.slider_vertical:IsShown() then
+    core.slider_vertical:Hide()
   end
 
   debug("GetTooltip: End")
 end
 
-function core:GetSlider(frame, toonCount)
-  local w,h = frame:GetSize()
-  if not core.slider then
-    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrame", frame, "UIPanelScrollBarTemplate, BackdropTemplate")
+local BACKDROP_SLIDER = {
+	bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
+	edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
+	tile = true,
+	tileEdge = true,
+	tileSize = 8,
+	edgeSize = 8,
+	insets = { left = 3, right = 3, top = 6, bottom = 6 },
+};
+
+function core:GetSliderHorizontal(frame, toonCount, w, h)
+  if not core.slider_horizontal then
+    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrameHorizontal", frame, "BackdropTemplate")
     scrollBarFrame:SetPoint("BOTTOMLEFT",frame)
     scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
     scrollBarFrame:SetOrientation('HORIZONTAL')
-    core:SkinFrame(scrollBarFrame,"AltRepsScrollBarFrame")
-    if scrollBarFrame.backdrop then
-      scrollBarFrame.backdrop:SetPoint('TOPLEFT', scrollBarFrame, 'TOPLEFT', 0, 0)
-      scrollBarFrame.backdrop:SetPoint('BOTTOMRIGHT', scrollBarFrame, 'BOTTOMRIGHT', 0, 0)
-    end
+    scrollBarFrame:SetBackdrop(BACKDROP_SLIDER)
+    scrollBarFrame:SetThumbTexture([[Interface\Buttons\UI-SliderBar-Button-Horizontal]])
     
     scrollBarFrame:SetValueStep(1)
-    scrollBarFrame:EnableMouseWheel(true);
     scrollBarFrame:SetScript("OnValueChanged", function(self,value,arg1)
       local rounded = round(value)
-      if not (core.slider.CurrentValue == rounded) then
-        core.slider.CurrentValue = rounded
+      if not (core.slider_horizontal.CurrentValue == rounded) then
+        core.slider_horizontal.CurrentValue = rounded
         core:UpdateTooltip()
       end
     end)
-    local downButton = scrollBarFrame.ScrollDownButton or _G["AltRepsScrollBarFrameScrollDownButton"]
-    if downButton then
-      downButton:SetAlpha(0)
-    end
-    local upButton = scrollBarFrame.ScrollUpButton or _G["AltRepsScrollBarFrameScrollUpButton"]
-    if upButton then
-      upButton:SetAlpha(0)
-    end
-    core.slider = scrollBarFrame
+    core.slider_horizontal = scrollBarFrame
   end
-  frame:SetHeight(h + 15)
-  core.slider:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
-  core.slider:SetSize(w*frame:GetScale(),20)
-  if core.slider.CurrentValue == nil then
-    core.slider:SetValue(1)
+  frame:SetHeight(h + 20)
+  core.slider_horizontal:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
+  core.slider_horizontal:SetSize(w*frame:GetScale(),20)
+  if core.slider_horizontal.CurrentValue == nil then
+    core.slider_horizontal:SetValue(1)
   end
-  core.slider:Show()
-  return core.slider
+  core.slider_horizontal:Show()
+  return core.slider_horizontal
+end
+
+function core:GetSliderVertical(frame, expansionCount, w, h)
+  if not core.slider_vertical then
+    local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrameVertical", frame, "BackdropTemplate")
+    scrollBarFrame:SetPoint("TOPRIGHT",frame, "TOPRIGHT", -3, -20)
+    scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
+    scrollBarFrame:SetOrientation('VERTICAL')
+    scrollBarFrame:SetBackdrop(BACKDROP_SLIDER)
+    scrollBarFrame:SetThumbTexture([[Interface\Buttons\UI-SliderBar-Button-Vertical]])
+    
+    scrollBarFrame:SetValueStep(1)
+    scrollBarFrame:SetScript("OnValueChanged", function(self,value,arg1)
+      local rounded = round(value)
+      if not (core.slider_vertical.CurrentValue == rounded) then
+        core.slider_vertical.CurrentValue = rounded
+        core:UpdateTooltip()
+      end
+    end)
+    core.slider_vertical = scrollBarFrame
+  end
+  frame:SetWidth(w + 20)
+  core.slider_vertical:SetMinMaxValues(1, (expansionCount + 1) - core.db.Options.MaxExpansions)
+  core.slider_vertical:SetSize(14,(h - 20)*frame:GetScale())
+  if core.slider_vertical.CurrentValue == nil then
+    core.slider_vertical:SetValue(1)
+  end
+  core.slider_vertical:Show()
+  return core.slider_vertical
 end
 
 function core:UpdateTooltip()
@@ -544,9 +1355,17 @@ function core:UpdateReps()
     local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
     if not toon.Reps then toon.Reps = {} end
     if not (atWarWith and not canToggleAtWar) and name then
+      local current, max = 0, 0
+      if standingID == 8 then 
+        current = 21000
+        max = 21000
+      else
+        current = barValue - barMin
+        max = barMax - barMin
+      end
       toon.Reps[factionId] = {
-        Current = barValue - barMin,
-        Max = barMax - barMin,
+        Current = current,
+        Max = max,
         Standing = standingID,
         HasParagonReward = hasRewardPending,
         ParagonValue = currentValue,
@@ -605,14 +1424,6 @@ function core:SkinFrame(frame,name)
         Tukui[1].SkinCloseButton(close)
       end
       close:SetAlpha(1)
-    end
-    if string.find(name, "ScrollBar") then
-      if ElvUI then
-        ElvUI[1]:GetModule('Skins'):HandleScrollBar(frame)
-      end
-      if Tukui and Tukui[1] and Tukui[1].SkinScrollBar then
-        Tukui[1].SkinScrollBar(frame)
-      end
     end
   end
 end
@@ -697,6 +1508,11 @@ function core:BuildOptions()
         name = "Faction settings",
         cmdHidden = true,
         args = {
+          GeneralSettings = {
+            type = "header",
+            order = 1,
+            name = "General settings"
+          },
           ParagonValueColor = {
             type = "toggle",
             order = 10,
@@ -705,6 +1521,23 @@ function core:BuildOptions()
             get = function(info) return core.db.Options.ColourParagon end,
             set = function(info, value)
               core.db.Options.ColourParagon = value
+              core:UpdateTooltip()
+            end,
+          },
+          MaxExpansions = {
+            type = "range",
+            min = 1,
+            max = 4,
+            step = 1,
+            order = 10,
+            name = "Max Expansions",
+            desc = "How many expansions should be shown at once before scrolling is enabled",
+            get = function(info) return core.db.Options.MaxExpansions end,
+            set = function(info, value)
+              core.db.Options.MaxExpansions = value
+              if core.slider_vertical then
+                core.slider_vertical:SetValue(1)
+              end
               core:UpdateTooltip()
             end,
           },
@@ -726,7 +1559,7 @@ function core:BuildOptions()
             order = 10,
             name = "General settings"
           },
-          GeneralSettings = {
+          MaxCharacters = {
             type = "range",
             min = 2,
             max = 20,
@@ -737,8 +1570,8 @@ function core:BuildOptions()
             get = function(info) return core.db.Options.MaxCharacters end,
             set = function(info, value)
               core.db.Options.MaxCharacters = value
-              if core.slider then
-                core.slider:SetValue(1)
+              if core.slider_horizontal then
+                core.slider_horizontal:SetValue(1)
               end
               core:UpdateTooltip()
             end,
@@ -776,14 +1609,43 @@ function core:BuildOptions()
       },
     },
   }
-  local calculatedOrder = options.args.Factions.args.FactionsHeader.order
+  local calculatedOrder = options.args.Factions.args.FactionsHeader.order + 100
   for _ , expansion in sortedPairs(core.db.Expansions) do
     calculatedOrder = calculatedOrder + 1
     options.args.Factions.args["Expansion"..expansion.Id] = {
       type = "group",
       order = calculatedOrder,
       name = expansion.Name,
-      args = {},
+      args = {
+        GeneralSettings = {
+          type = "header",
+          order = 10,
+          name = "General settings"
+        },
+        ShowExpansion = {
+          type = "toggle",
+          order = 20,
+          name = "Show",
+          desc = "Should we show reputations from this expansion?",
+          get = function(info)
+            return expansion.Show
+          end,
+          set = function(info, value)
+            expansion.Show = value
+            for factionId, faction in sortedPairs(core.db.Factions) do
+              if expansion.Id == faction.ExpansionId then
+                faction.Show = value
+              end
+            end
+            core:UpdateTooltip()
+          end,
+        },
+        ReputationsSettings = {
+          type = "header",
+          order = 30,
+          name = "Reputations"
+        },
+      },
     }
     for factionId, faction in sortedPairs(core.db.Factions) do
       if expansion.Id == faction.ExpansionId then
@@ -797,6 +1659,14 @@ function core:BuildOptions()
           end,
           set = function(info, value)
             faction.Show = value
+            local showExpansion = false
+            for factionId, faction in sortedPairs(core.db.Factions) do
+              if expansion.Id == faction.ExpansionId then
+                showExpansion = faction.Show
+                if showExpansion then break end
+              end
+            end
+            expansion.Show = showExpansion
             core:UpdateTooltip()
           end,
         }
@@ -833,11 +1703,11 @@ function core:BuildOptions()
         SortOrder = {
           type = "range",
           min = 1,
-          max = 25,
+          max = 50,
           step = 1,
           order = 20,
           name = "Sort order",
-          desc = "What is the priority of displaying this character? (1 - Highest priority, 25 - Lowest priority)",
+          desc = "What is the priority of displaying this character? (1 - Highest priority, 50 - Lowest priority)",
           get = function(info)
             return character.SortOrder 
           end,
@@ -921,25 +1791,27 @@ function ShowToonTooltip(cell, arg, ...)
 
   local totalSupplies, totalGold = 0, 0
   for expansionIndex, expansion in sortedPairs(core.db.Expansions) do
-    local expansionSupplies, expansionGold = 0, 0
-    for factionId, faction in sortedPairs(core.db.Factions) do
-      if expansion.Id == faction.ExpansionId then
-        local rep = toon.Reps[factionId]
-        if rep and rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
-          local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
-          if rep.HasParagonReward then supplies = supplies - 1 end
-          expansionSupplies = expansionSupplies + supplies
-          totalSupplies = totalSupplies + supplies
-          expansionGold = expansionGold + supplies * expansion.SupplyChestValue
-          totalGold = totalGold + supplies * expansion.SupplyChestValue
+    if expansion and expansion.SupplyChestValue then
+      local expansionSupplies, expansionGold = 0, 0
+      for factionId, faction in sortedPairs(core.db.Factions) do
+        if expansion.Id == faction.ExpansionId then
+          local rep = toon.Reps[factionId]
+          if rep and rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
+            local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
+            if rep.HasParagonReward then supplies = supplies - 1 end
+            expansionSupplies = expansionSupplies + supplies
+            totalSupplies = totalSupplies + supplies
+            expansionGold = expansionGold + supplies * expansion.SupplyChestValue
+            totalGold = totalGold + supplies * expansion.SupplyChestValue
+          end
         end
       end
-    end
 
-    rowNumber = miniTooltip:AddLine()
-    miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. expansion.Name .. FONTEND)
-    miniTooltip:SetCell(rowNumber, 2, expansionSupplies)
-    miniTooltip:SetCell(rowNumber, 3, comma_value(expansionGold) .. " " .. goldTextureString)
+      rowNumber = miniTooltip:AddLine()
+      miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. expansion.Name .. FONTEND)
+      miniTooltip:SetCell(rowNumber, 2, expansionSupplies)
+      miniTooltip:SetCell(rowNumber, 3, comma_value(expansionGold) .. " " .. goldTextureString)
+    end
   end
   
   rowNumber = miniTooltip:AddLine()
@@ -995,6 +1867,52 @@ function ShowFactionTooltip(cell, arg, ...)
       miniTooltip:SetCell(suppliesAvailableLine, 2, "|T" .. READY_CHECK_READY_TEXTURE .. ":0|t")
     end
   end
+
+  finishMiniTooltip()
+end
+
+function ShowOverallTooltip(cell, arg, ...)
+  openMiniTooltip(3, "LEFT", "RIGHT", "RIGHT")
+  miniTooltip:SetCell(miniTooltip:AddHeader(), 1, GOLDFONT .. "AltReps: " .. FONTEND .. YELLOWFONT .. addon.version .. FONTEND)
+
+  miniTooltip:AddSeparator(6,0,0,0,0)
+
+  local rowNumber = miniTooltip:AddLine()
+  miniTooltip:SetCell(rowNumber, 1, GOLDFONT .. "Supply chests" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 2, YELLOWFONT .. "Opened" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 3, YELLOWFONT .. "Gold earned (Approx.)" .. FONTEND)
+
+  local totalSupplies, totalGold = 0, 0
+  for expansionIndex, expansion in sortedPairs(core.db.Expansions) do
+    if expansion and expansion.SupplyChestValue then
+      local expansionSupplies, expansionGold = 0, 0
+      for factionId, faction in sortedPairs(core.db.Factions) do
+        if expansion.Id == faction.ExpansionId then
+          for toonId, toon in sortedPairs(core.db.Toons) do
+            local rep = toon.Reps[factionId]
+            if rep and rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
+              local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
+              if rep.HasParagonReward then supplies = supplies - 1 end
+              expansionSupplies = expansionSupplies + supplies
+              totalSupplies = totalSupplies + supplies
+              expansionGold = expansionGold + supplies * expansion.SupplyChestValue
+              totalGold = totalGold + supplies * expansion.SupplyChestValue
+            end
+          end
+        end
+      end
+
+      rowNumber = miniTooltip:AddLine()
+      miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. expansion.Name .. FONTEND)
+      miniTooltip:SetCell(rowNumber, 2, expansionSupplies)
+      miniTooltip:SetCell(rowNumber, 3, comma_value(expansionGold) .. " " .. goldTextureString)
+    end
+  end
+  
+  rowNumber = miniTooltip:AddLine()
+  miniTooltip:SetCell(rowNumber, 1, YELLOWFONT .. "Total" .. FONTEND)
+  miniTooltip:SetCell(rowNumber, 2, totalSupplies)
+  miniTooltip:SetCell(rowNumber, 3, comma_value(totalGold) .. " " .. goldTextureString)
 
   finishMiniTooltip()
 end
@@ -1062,7 +1980,7 @@ end
 
 function tablelength(T)
   local count = 0
-  for _ in pairs(T) do count = count + 1 end
+  for _, v in pairs(T) do if v.Show then count = count + 1 end end
   return count
 end
 
