@@ -20,6 +20,8 @@ local YELLOWFONT = LIGHTYELLOW_FONT_COLOR_CODE
 local GOLDFONT = NORMAL_FONT_COLOR_CODE
 local BLUEFONT = "|cff00ffdd";
 
+local factionIdForOrdering = nil
+
 local connectedRealms = {}
 
 local showCharacterServerOptions = {
@@ -1240,6 +1242,7 @@ function core:GetWindow()
 end
 
 function core:GetTooltip(frame)
+  local factionHighlightRow = nil
   debug("GetTooltip: Start")
   if core.tooltip then LibQTip:Release(core.tooltip) end
   local tooltip = LibQTip:Acquire("AltRepsTooltip", 1, "LEFT")
@@ -1261,8 +1264,15 @@ function core:GetTooltip(frame)
   local expansionIndex = 0
   local expansionSliderValue = core.slider_vertical and core.slider_vertical.CurrentValue or 1
   local currentToon = core.db.Toons[thisToon]
-  
-  for toonId, toon in sortedPairs(core.db.Toons, characterSort, characterFilter) do
+
+  local sort = nil
+  if factionIdForOrdering ~= nil then 
+    sort = factionSort
+  else
+    sort = characterSort
+  end
+
+  for toonId, toon in sortedPairs(core.db.Toons, sort, characterFilter) do
     if toon and toon.Show then
       toonIndex = toonIndex + 1
       if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
@@ -1288,6 +1298,7 @@ function core:GetTooltip(frame)
               hasExpansionRowBeenAdded = true
             end
             rows[factionId] = rows[factionId] or tooltip:AddLine();
+            if factionId == factionIdForOrdering then factionHighlightRow = rows[factionId] end
           end
         end
       end
@@ -1296,6 +1307,9 @@ function core:GetTooltip(frame)
   for factionId, row in pairs(rows) do
     local faction = core.db.Factions[factionId]
     tooltip:SetCell(row, 1, YELLOWFONT .. faction.Name .. FONTEND)
+    tooltip:SetLineScript(row, "OnMouseDown", function() 
+      core:SetFactionOrdering(factionId)
+    end )
     for toonName, toon in pairs(core.db.Toons) do
       if toon and toon.Show and columns[toonName] then
         local rep = toon.Reps[factionId]
@@ -1329,6 +1343,10 @@ function core:GetTooltip(frame)
     else
       tooltip:SetLineColor(i, 0, 0, 0, 0)
       hi = true
+    end
+
+    if factionHighlightRow == i then
+      tooltip:SetLineColor(i, 0.9803921568627451, 1, 0.392156862745098, 0.4)
     end
   end
   local w,h = tooltip:GetSize()
@@ -1427,6 +1445,16 @@ function core:GetSliderVertical(frame, expansionCount, w, h)
   end
   core.slider_vertical:Show()
   return core.slider_vertical
+end
+
+
+function core:SetFactionOrdering(factionId)
+  if factionId == factionIdForOrdering then
+    factionIdForOrdering = nil
+  else
+    factionIdForOrdering = factionId
+  end
+  core:UpdateTooltip()
 end
 
 function core:UpdateTooltip()
@@ -2120,6 +2148,38 @@ function sortedPairs(t, sortFunction, filterFunction)
     end
   end
   return iter
+end
+
+function factionSort(characterKey1, characterKey2)
+  local toon1 = core.db.Toons[characterKey1]
+  local toon2 = core.db.Toons[characterKey2]
+
+  factionRep1 = toon1.Reps[factionIdForOrdering] 
+  factionRep2 = toon2.Reps[factionIdForOrdering] 
+
+  if factionRep1 ~= nil and factionRep2 ~= nil then 
+    if factionRep1.Standing > factionRep2.Standing then
+      return true
+    elseif factionRep2.Standing > factionRep1.Standing then
+      return false
+    else
+      if factionRep1.Current > factionRep2.Current then
+        return true
+      elseif factionRep2.Current > factionRep1.Current then
+        return false
+      else
+        if factionRep1.ParagonValue and factionRep2.ParagonValue then
+          return factionRep1.ParagonValue > factionRep2.ParagonValue
+        end
+      end
+    end
+  elseif factionRep1 ~= nil then
+    return true
+  elseif factionRep2 ~= nil then
+    return false
+  end
+  
+  characterSort(characterKey1, characterKey2)
 end
 
 function characterSort(characterKey1, characterKey2)  

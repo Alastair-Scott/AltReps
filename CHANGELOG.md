@@ -1,3 +1,7 @@
+### Changes: V2.6.0
+
+- Added ability to click on a faction, and order characters from highest to lowest reputation
+
 ### Changes: V2.5.0
 
 - Added Shadowlands reputations
