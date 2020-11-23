@@ -1,4 +1,4 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: AltReps
 ## Notes: Tracks Reputations for all your characters
 ## Author: Eylwen

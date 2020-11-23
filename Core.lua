@@ -44,97 +44,184 @@ local factionStandings = {
   [6] = "Honored",
   [7] = "Revered",
   [8] = "Exalted",
+  [9] = "Paragon"
 }
 
 local defaultDB = {
-  DBVersion = 7,
+  DBVersion = 8,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
-    ColourParagon = true,
-    Debug = false,
+    ColourReputations = true,
     MaxCharacters = 12,
     MaxExpansions = 3,
     ReputationIcon = true,
     ShowCharactersFromServerOption = 0,
-    GroupCharactersByServerOption = 0
+    GroupCharactersByServerOption = 0,
+    StandingColours = {      
+			[0] = {
+				["b"] = 1,
+				["g"] = 1,
+				["r"] = 1,
+			},
+      [1] = {
+        ["b"] = 0.07058823529411765,
+				["g"] = 0.1019607843137255,
+				["r"] = 1,
+			},
+			[2] = {
+				["b"] = 0.1764705882352941,
+				["g"] = 0.3450980392156863,
+				["r"] = 1,
+			},
+			[3] = {
+				["b"] = 0.592156862745098,
+				["g"] = 0.8,
+				["r"] = 1,
+			},
+			[4] = {
+				["b"] = 0.392156862745098,
+				["g"] = 1,
+				["r"] = 0.9803921568627451,
+			},
+			[5] = {
+				["b"] = 0.6431372549019607,
+				["g"] = 1,
+				["r"] = 0.6549019607843137,
+			},
+			[6] = {
+				["b"] = 0.3372549019607843,
+				["g"] = 0.6941176470588235,
+				["r"] = 0.203921568627451,
+			},
+			[7] = {
+				["b"] = 0,
+				["g"] = 0.5058823529411764,
+				["r"] = 0.04313725490196078,
+			},
+			[8] = {
+				["b"] = 0.00392156862745098,
+				["g"] = 1,
+				["r"] = 0,
+			},
+			[9] = {
+				["b"] = 1,
+				["g"] = 0.8666666666666667,
+				["r"] = 0.05490196078431373,
+			},
+    }
   },
   Toons = {},
   Expansions = {
     [0] = {
+      Name = "Shadowlands",
+      Id = 9,
+      Show = true
+    },
+    [1] = {
       Name = "Battle for Azeroth",
       Id = 8,
       SupplyChestValue = 4000,
       Show = true
     },
-    [1] = {
+    [2] = {
       Name = "Legion",
       Id = 7,
       SupplyChestValue = 750,
       Show = true
     },
-    [2] = {
+    [3] = {
       Name = "Warlords of Draenor",
       Id = 6,
       Show = false
     },
-    [3] = {
+    [4] = {
       Name = "Mists of Pandaria",
       Id = 5,
       Show = false
     },
-    [4] = {
+    [5] = {
       Name = "Cataclysm",
       Id = 4,
       Show = false
     },
-    [5] = {
+    [6] = {
       Name = "Wrath of the Lich King",
       Id = 3,
       Show = false
     },
-    [6] = {
+    [7] = {
       Name = "The Burning Crusade",
       Id = 2,
       Show = false
     },
-    [7] = {
+    [8] = {
       Name = "Vanilla",
       Id = 1,
       Show = false
     },
-    [8] = {
+    [9] = {
       Name = "Vanilla - Steamwheedle Cartel",
       Id = 1.1,
       Show = false
     },
-    [9] = {
+    [10] = {
       Name = "Vanilla - Alliance",
       Id = 1.2,
       Show = false
     },
-    [10] = {
+    [11] = {
       Name = "Vanilla - Horde",
       Id = 1.3,
       Show = false
     },
-    [11] = {
+    [12] = {
       Name = "Vanilla - Alliance Forces",
       Id = 1.4,
       Show = false
     },
-    [12] = {
+    [13] = {
       Name = "Vanilla - Horde Forces",
       Id = 1.5,
       Show = false
     },
-    [13] = {
+    [14] = {
       Name = "Other",
       Id = 0,
       Show = false
     }
   },
   Factions = {
+    [2439] = {
+      Name = "The Avowed",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2413] = {
+      Name = "Court of Harvesters",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2407] = {
+      Name = "The Ascended",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2410] = {
+      Name = "The Undying Army",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2465] = {
+      Name = "The Wild Hunt",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
     [2103] = {
         Name = "Zandalari Empire",
         Show = true,
@@ -1006,6 +1093,15 @@ function core:OnInitialize()
     AltRepsDB.Factions = defaultDB.Factions
     AltRepsDB.Options.MaxExpansions = defaultDB.Options.MaxExpansions
     AltRepsDB.DBVersion = 7
+  elseif AltRepsDB.DBVersion < 8 then
+    AltRepsDB.Expansions = defaultDB.Expansions
+    AltRepsDB.Factions = defaultDB.Factions
+    AltRepsDB.Options.Debug = nil
+    AltRepsDB.Options.ColourParagon = nil
+    AltRepsDB.Options.ColourReputations = defaultDB.Options.ColourReputations
+    AltRepsDB.Options.StandingColours = defaultDB.Options.StandingColours
+    
+    AltRepsDB.DBVersion = 8
   end
 
   core.db = AltRepsDB
@@ -1207,10 +1303,13 @@ function core:GetTooltip(frame)
           local display = ""
           if rep.ParagonValue then
             display = mod(rep.ParagonValue, rep.ParagonThreshold) .. " / " .. rep.ParagonThreshold
-            if core.db.Options.ColourParagon then display = BLUEFONT .. display .. FONTEND end
+            local color = core.db.Options.StandingColours[9]
+            if core.db.Options.ColourReputations then display = ColorCodeOpen(color) .. display .. FONTEND end
             if rep.HasParagonReward then display = display .. " " .. paragonLootTextureString end
           elseif rep.Current then
+            local color = core.db.Options.StandingColours[rep.Standing]
             display = rep.Current .. " / " .. rep.Max
+            if core.db.Options.ColourReputations then display = ColorCodeOpen(color) .. display .. FONTEND end
           end
           tooltip:SetCell(row, columns[toonName], format(display))
           tooltip:SetCellScript(row, columns[toonName], "OnEnter", ShowFactionTooltip, { factionId = factionId, toonId = toonName})
@@ -1485,20 +1584,22 @@ function core:BuildOptions()
               core:SetReputationIconVisibility(value)
             end,
           },
-          GeneralHeader = {
-            order = 20,
-            type = "header",
-            name = "Advanced settings",
-          },
-          Debug = {
+          ColourReputations = {
             type = "toggle",
-            name = "Debug",
-            desc = "Enable debug mode",
-            order = 21,
-            get = function(info) return core.db.Options.Debug end,
+            order = 5,
+            name = "Colour reputations",
+            desc = "Should reputations be coloured by standing? (Friendly, Honoured, etc.)",
+            get = function(info) return core.db.Options.ColourReputations end,
             set = function(info, value)
-              core.db.Options.Debug = value
+              core.db.Options.ColourReputations = value
+              core:UpdateTooltip()
             end,
+          },
+          StandingColoursHeader= {
+            order = 6,
+            type = "header",
+            name = "Faction standing colours",
+            cmdHidden = true,
           },
         },
       },
@@ -1512,17 +1613,6 @@ function core:BuildOptions()
             type = "header",
             order = 1,
             name = "General settings"
-          },
-          ParagonValueColor = {
-            type = "toggle",
-            order = 10,
-            name = "Colour paragon",
-            desc = "Should paragon reputations be coloured differently",
-            get = function(info) return core.db.Options.ColourParagon end,
-            set = function(info, value)
-              core.db.Options.ColourParagon = value
-              core:UpdateTooltip()
-            end,
           },
           MaxExpansions = {
             type = "range",
@@ -1742,6 +1832,27 @@ function core:BuildOptions()
       },
     }   
   end
+
+  local calculatedOrder = options.args.General.args.StandingColoursHeader.order
+  for index, standingColour in sortedPairs(core.db.Options.StandingColours) do
+    calculatedOrder = calculatedOrder + 1
+    options.args.General.args["StandingColour_" .. index] = {
+      type = "color",
+      order = calculatedOrder,
+      name = factionStandings[index],
+      disabled = function() return not core.db.Options.ColourReputations end,
+      get = function(info)
+        return standingColour.r, standingColour.g, standingColour.b
+      end,
+      set = function(info, r, g, b)
+        standingColour.r = r
+        standingColour.g = g
+        standingColour.b = b
+        core:UpdateTooltip()
+      end,
+    }
+  end
+
   addon.Options = addon.Options or {}
   for k, v in pairs(options) do
     addon.Options[k] = v
