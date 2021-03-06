@@ -50,7 +50,7 @@ local factionStandings = {
 }
 
 local defaultDB = {
-  DBVersion = 8,
+  DBVersion = 9,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
@@ -118,6 +118,7 @@ local defaultDB = {
     [0] = {
       Name = "Shadowlands",
       Id = 9,
+      SupplyChestValue = 3500,
       Show = true
     },
     [1] = {
@@ -1102,8 +1103,10 @@ function core:OnInitialize()
     AltRepsDB.Options.ColourParagon = nil
     AltRepsDB.Options.ColourReputations = defaultDB.Options.ColourReputations
     AltRepsDB.Options.StandingColours = defaultDB.Options.StandingColours
+  elseif AltRepsDB.DBVersion < 9 then
+    AltRepsDB.Expansions = defaultDB.Expansions
     
-    AltRepsDB.DBVersion = 8
+    AltRepsDB.DBVersion = 9
   end
 
   core.db = AltRepsDB
@@ -1987,7 +1990,7 @@ function ShowFactionTooltip(cell, arg, ...)
     local supplyChestValue = 0
     for _, expansion in pairs(core.db.Expansions) do 
       if expansion.Id == faction.ExpansionId then
-        supplyChestValue = expansion.SupplyChestValue
+        supplyChestValue = expansion.SupplyChestValue or 0
       end
     end
 
@@ -2169,7 +2172,7 @@ function factionSort(characterKey1, characterKey2)
         return false
       else
         if factionRep1.ParagonValue and factionRep2.ParagonValue then
-          return factionRep1.ParagonValue > factionRep2.ParagonValue
+          return mod(factionRep1.ParagonValue, factionRep1.ParagonThreshold)  > mod(factionRep2.ParagonValue, factionRep2.ParagonThreshold) 
         end
       end
     end

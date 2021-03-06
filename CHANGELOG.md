@@ -1,3 +1,8 @@
+### Changes: V2.7.0
+
+- Updated Shadowlands supply chest gold
+- Fixed character ordering by faction when multiple characters have paragon reputations
+
 ### Changes: V2.6.0
 
 - Added ability to click on a faction, and order characters from highest to lowest reputation
