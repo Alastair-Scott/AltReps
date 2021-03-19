@@ -1,3 +1,7 @@
+### Changes: V2.7.1
+
+- Updated Game Version
+
 ### Changes: V2.7.0
 
 - Updated Shadowlands supply chest gold
