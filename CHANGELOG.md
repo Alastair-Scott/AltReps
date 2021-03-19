@@ -1,3 +1,7 @@
+### Changes: V2.7.2
+
+- Fixed issue with character sorting
+
 ### Changes: V2.7.1
 
 - Updated Game Version

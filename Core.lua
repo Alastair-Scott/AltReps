@@ -2189,6 +2189,13 @@ function characterSort(characterKey1, characterKey2)
   local toon1 = core.db.Toons[characterKey1]
   local toon2 = core.db.Toons[characterKey2]
 
+  if toon1 ~= nil and toon2 == nil then
+    return true
+  end
+  if toon1 == nil and toon2 ~= nil then
+    return false
+  end
+
   if characterKey1 == thisToon then
     return true
   end
@@ -2219,6 +2226,13 @@ function characterSort(characterKey1, characterKey2)
       end
       return toon1.ConnectedRealm < toon2.ConnectedRealm
     end
+  end
+
+  if toon1 ~= nil and toon1.SortOrder == nil then
+    toon1.SortOrder = 25
+  end
+  if toon2 ~= nil and toon2.SortOrder == nil then
+    toon2.SortOrder = 25
   end
 
   if toon1.SortOrder ~= toon2.SortOrder then
