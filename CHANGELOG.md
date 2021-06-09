@@ -1,3 +1,7 @@
+### Changes: V2.7.3
+
+- Added Ve'nari
+
 ### Changes: V2.7.2
 
 - Fixed issue with character sorting

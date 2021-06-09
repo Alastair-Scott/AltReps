@@ -50,7 +50,7 @@ local factionStandings = {
 }
 
 local defaultDB = {
-  DBVersion = 9,
+  DBVersion = 10,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
@@ -195,6 +195,12 @@ local defaultDB = {
     }
   },
   Factions = {
+    [2432] = {
+      Name = "Ve'nari",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
     [2439] = {
       Name = "The Avowed",
         Show = true,
@@ -1105,8 +1111,15 @@ function core:OnInitialize()
     AltRepsDB.Options.StandingColours = defaultDB.Options.StandingColours
   elseif AltRepsDB.DBVersion < 9 then
     AltRepsDB.Expansions = defaultDB.Expansions
+  elseif AltRepsDB.DBVersion < 10 then
+    AltRepsDB.Factions[2432] = {
+      Name = "Ve'nari",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    }
     
-    AltRepsDB.DBVersion = 9
+    AltRepsDB.DBVersion = 10
   end
 
   core.db = AltRepsDB
@@ -1483,6 +1496,7 @@ function core:UpdateReps()
   for factionId, _ in pairs(core.db.Factions) do
     local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
     local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
+    local friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold = GetFriendshipReputation(factionId)
     if not toon.Reps then toon.Reps = {} end
     if not (atWarWith and not canToggleAtWar) and name then
       local current, max = 0, 0
@@ -1499,7 +1513,9 @@ function core:UpdateReps()
         Standing = standingID,
         HasParagonReward = hasRewardPending,
         ParagonValue = currentValue,
-        ParagonThreshold = threshold
+        ParagonThreshold = threshold,
+        FriendTextLevel = friendTextLevel,
+        FriendText = friendText,
       }
     end
   end
@@ -1979,9 +1995,16 @@ function ShowFactionTooltip(cell, arg, ...)
   local ftex = ""
   miniTooltip:SetCell(miniTooltip:AddHeader(), 1, GOLDFONT .. faction.Name .. FONTEND)
   
-  local standingLine = miniTooltip:AddLine()
-  miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
-  miniTooltip:SetCell(standingLine, 2, factionStandings[rep.Standing])
+  local standingLine = miniTooltip:AddLine()  
+
+  if rep.FriendTextLevel ~= nil then
+    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
+    miniTooltip:SetCell(standingLine, 2, rep.FriendTextLevel)
+    miniTooltip:SetCell(miniTooltip:AddLine(), 1, rep.FriendText, 2)
+  else
+    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
+    miniTooltip:SetCell(standingLine, 2, factionStandings[rep.Standing])
+  end
   
   if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
     local suppliesLine = miniTooltip:AddLine()
