@@ -1,3 +1,9 @@
+### Changes: V2.7.4
+
+- Added Death's Advance
+- Added The Archivist' Codex
+- Added Court of Night
+
 ### Changes: V2.7.3
 
 - Added Ve'nari

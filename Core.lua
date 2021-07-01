@@ -195,6 +195,24 @@ local defaultDB = {
     }
   },
   Factions = {
+    [2470] = {
+      Name = "Death's Advance",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2472] = {
+      Name = "The Archivists' Codex",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
+    [2464] = {
+      Name = "Court of Night",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
     [2432] = {
       Name = "Ve'nari",
         Show = true,
@@ -1118,8 +1136,27 @@ function core:OnInitialize()
         ExpansionId = 9,
         For = "Alliance;Horde"
     }
-    
-    AltRepsDB.DBVersion = 10
+  elseif AltRepsDB.DBVersion < 11 then
+    AltRepsDB.Factions[2470] = {
+      Name = "Death's Advance",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    }
+    AltRepsDB.Factions[2472] = {
+      Name = "The Archivists' Codex",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    }
+    AltRepsDB.Factions[2464] = {
+      Name = "Court of Night",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    }
+
+    AltRepsDB.DBVersion = 11
   end
 
   core.db = AltRepsDB
