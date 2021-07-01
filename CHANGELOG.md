@@ -1,3 +1,7 @@
+### Changes: V2.7.5
+
+- Updated game version
+
 ### Changes: V2.7.4
 
 - Added Death's Advance
