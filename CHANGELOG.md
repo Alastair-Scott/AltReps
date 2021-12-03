@@ -1,3 +1,8 @@
+### Changes: V3.0.0
+
+- Updated game version
+- Major redesign to improve visibility of useful information
+
 ### Changes: V2.7.5
 
 - Updated game version

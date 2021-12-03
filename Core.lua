@@ -5,6 +5,7 @@ addon.LDB = LibStub("LibDataBroker-1.1", true)
 addon.icon = addon.LDB and LibStub("LibDBIcon-1.0", true)
 -- Lua functions
 local pairs = pairs
+local next = next
 
 local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 
@@ -49,6 +50,29 @@ local factionStandings = {
   [9] = "Paragon"
 }
 
+local standingColours = {
+  Red = {
+    0.53333333333333333333333333333333,
+    0.2039215686274509803921568627451,
+    0.14509803921568627450980392156863
+  },
+  Yellow = {
+    0.58823529411764705882352941176471,
+    0.45882352941176470588235294117647,
+    0
+  },
+  Green = {
+    0,
+    0.3921568627450980392156862745098,
+    0.06666666666666666666666666666667
+  },
+  Blue = {
+    0,
+    0.5,
+    0.9
+  }
+}
+
 local defaultDB = {
   DBVersion = 10,
   MinimapIcon = { hide = false },
@@ -57,7 +81,6 @@ local defaultDB = {
     ColourReputations = true,
     MaxCharacters = 12,
     MaxExpansions = 3,
-    ReputationIcon = true,
     ShowCharactersFromServerOption = 0,
     GroupCharactersByServerOption = 0,
     StandingColours = {      
@@ -1106,7 +1129,6 @@ function core:OnInitialize()
   elseif AltRepsDB.DBVersion < 6 then
     AltRepsDB.Options.ShowCharactersFromServerOption = defaultDB.Options.ShowCharactersFromServerOption 
     AltRepsDB.Options.GroupCharactersByServerOption = defaultDB.Options.GroupCharactersByServerOption
-    AltRepsDB.Options.ReputationIcon = defaultDB.Options.ReputationIcon
     for toonId, toon in pairs(AltRepsDB.Toons) do
       local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
       toonserver = toonserver:gsub("%s", "")
@@ -1155,7 +1177,10 @@ function core:OnInitialize()
         ExpansionId = 9,
         For = "Alliance;Horde"
     }
-
+    AltRepsDB.ReputationIcon = nil
+    if AltRepsDB.Options.MaxExpansions > 3 then
+      AltRepsDB.Options.MaxExpansions = 3
+    end
     AltRepsDB.DBVersion = 11
   end
 
@@ -1170,21 +1195,14 @@ function core:OnInitialize()
   core.optionsFactionsFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Factions", "AltReps", "Factions")
   core.optionsCharactersFrame = AceConfigDialog:AddToBlizOptions("AltReps", "Characters", "AltReps", "Characters")
 
-  core.infoTooltip = LibQTip:Acquire("AltRepsInfoTooltip", 2, "LEFT")
-  core.infoTooltip:AddHeader(GOLDFONT .. 'AltReps' .. FONTEND)
-  core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Left click: " .. FONTEND .. "Display character data")
-  core.infoTooltip:SetCell(core.infoTooltip:AddLine(), 1, YELLOWFONT .. "Right click: " .. FONTEND .. "Open the configuration menu")
-
   addon.dataobject = addon.LDB and addon.LDB:NewDataObject("AltReps", {
     text = "AR",
     type = "launcher",
     icon = "Interface\\Addons\\AltReps\\icon.tga",
-    OnEnter = function(frame)
-      core.infoTooltip:SmartAnchorTo(frame)
-      core.infoTooltip:Show()
-     end,
-    OnLeave = function(frame)
-      core.infoTooltip:Hide()
+    OnTooltipShow = function(tooltip)
+      tooltip:AddLine(GOLDFONT .. 'AltReps' .. FONTEND)
+      tooltip:AddLine(YELLOWFONT .. "Left click: " .. FONTEND .. "Display character data")
+      tooltip:AddLine(YELLOWFONT .. "Right click: " .. FONTEND .. "Open the configuration menu")
     end,
     OnClick = function(frame, button)
       if button == "RightButton" then
@@ -1198,29 +1216,6 @@ function core:OnInitialize()
     addon.icon:Register(addonName, addon.dataobject, core.db.MinimapIcon)
     addon.icon:Refresh(addonName)
   end
-
-  local repFrame = _G["ReputationFrame"]
-  local repIcon = CreateFrame("Button", "AltRepsReputationWindowButton", repFrame)
-  repIcon:SetSize(24, 24)
-  repIcon:SetPoint("TOPRIGHT", -17, -29)
-  repIcon:SetNormalTexture("Interface\\Addons\\AltReps\\icon.tga")
-	repIcon:SetHighlightTexture("Interface\\BUTTONS\\UI-Common-MouseHilight")
-  repIcon:SetScript("OnEnter", function (self) 
-    core.infoTooltip:SmartAnchorTo(self)
-    core.infoTooltip:Show()
-  end)
-	repIcon:SetScript("OnLeave", function (self)
-    core.infoTooltip:Hide()
-  end)
-  repIcon:SetScript("OnMouseUp", function (self, button)
-    if button == "RightButton" then
-      core:ShowConfig()
-    else
-      core:ToggleVisibility()
-    end
-  end)
-  core.repIcon = repIcon
-  core:SetReputationIconVisibility(core.db.Options.ReputationIcon)
 end
 
 function core:OnEnable()
@@ -1235,14 +1230,61 @@ end
 
 function core:GetWindow()
   if not core.frame then
-    local f = CreateFrame("Frame","AltRepsFrame", UIParent, "BasicFrameTemplate, BackdropTemplate")
+    local f = CreateFrame("Frame","AltRepsFrame", UIParent, "BackdropTemplate")
+    local titleFrame = CreateFrame("Frame","AltRepsTitleFrame", f, "BackdropTemplate")
+    titleFrame:SetPoint("TOPLEFT", f ,"TOPLEFT", 0, 0)
+    titleFrame:SetPoint("BOTTOMRIGHT", f ,"TOPRIGHT", 0, -20)
+    titleFrame:EnableMouse(false)
+    local titleTexture = titleFrame:CreateTexture(nil, "BACKGROUND")
+    titleTexture:SetAllPoints()
+    titleTexture:SetColorTexture(0, 0, 0, 0.9)
+
+    local title = titleFrame:CreateFontString(titleFrame, "OVERLAY", "GameTooltipText")
+    title:SetPoint("CENTER", 0, 0)
+    title:SetText(GOLDFONT .. "AltReps: " .. FONTEND .. YELLOWFONT .. addon.version .. FONTEND)
+
+    local frameTexture = f:CreateTexture(nil, "BACKGROUND")
+    frameTexture:SetAllPoints()
+    frameTexture:SetColorTexture(0, 0, 0, 0.8)
+
+    local closeButton = CreateFrame ("button", "$parentCloseButton", titleFrame, "BackdropTemplate")
+    closeButton:SetSize(16, 16)
+    closeButton:SetPoint("TOPRIGHT", titleFrame, "TOPRIGHT", -2, -2)
+    closeButton:SetNormalTexture([[Interface\GLUES\LOGIN\Glues-CheckBox-Check]])
+    closeButton:SetHighlightTexture([[Interface\GLUES\LOGIN\Glues-CheckBox-Check]])
+    closeButton:SetPushedTexture([[Interface\GLUES\LOGIN\Glues-CheckBox-Check]])
+    closeButton:GetNormalTexture():SetDesaturated(true)
+    closeButton:GetHighlightTexture():SetDesaturated(true)
+    closeButton:GetPushedTexture():SetDesaturated(true)  
+    closeButton:SetAlpha (0.7)
+    closeButton:SetScript("OnClick", function() 
+      f:Hide() 
+    end)
+    titleFrame.CloseButton = closeButton
+
+    local configButton =  CreateFrame ("Button", "$parentConfigButton", titleFrame, "BackdropTemplate")
+		configButton:SetPoint ("RIGHT", titleFrame.CloseButton, "LEFT", -2, 0)
+		configButton:SetSize (16, 16)
+		configButton:SetNormalTexture ([[Interface\GossipFrame\BinderGossipIcon]])
+		configButton:SetHighlightTexture ([[Interface\GossipFrame\BinderGossipIcon]])
+		configButton:SetPushedTexture ([[Interface\GossipFrame\BinderGossipIcon]])
+		configButton:GetNormalTexture():SetDesaturated (true)
+		configButton:GetHighlightTexture():SetDesaturated (true)
+		configButton:GetPushedTexture():SetDesaturated (true)
+		configButton:SetAlpha (0.7)
+    configButton:SetScript("OnClick", function() 
+      f:Hide()
+      core:ShowConfig()
+    end)
+		titleFrame.Config = configButton
+
     f:SetMovable(true)
     f:SetFrameStrata("TOOLTIP")
     f:SetFrameLevel(100)
     f:SetClampedToScreen(true)
     f:EnableMouse(true)
     f:SetUserPlaced(true)
-    f:SetAlpha(0.5)
+    f:SetAlpha(1)
     if core.db.Window.posx and core.db.Window.posy then
       f:SetPoint("TOPLEFT",core.db.Window.posx,-core.db.Window.posy)
     else
@@ -1293,30 +1335,22 @@ function core:GetWindow()
     core.frame = f
   end
 end
-
-function core:GetTooltip(frame)
-  local factionHighlightRow = nil
-  debug("GetTooltip: Start")
-  if core.tooltip then LibQTip:Release(core.tooltip) end
-  local tooltip = LibQTip:Acquire("AltRepsTooltip", 1, "LEFT")
-  tooltip:SetCellMarginH(0)
-  tooltip.anchorframe = f
-  tooltip:Clear()
-  tooltip:SetScale(1)
-  core.tooltip = tooltip 
+local displayTable = {
   
-  local header = tooltip:AddHeader('AltReps')
-  tooltip:SetCellScript(header, 1, "OnEnter", ShowOverallTooltip)
-  local columns = localarr("columns")
-  local rows = localarr("rows")
+}
+function core:GetTooltip(frame)
   local hasAlliance = "xyz"
   local hasHorde = "xyz"
-
   local toonIndex = 0
   local toonSliderValue = core.slider_horizontal and core.slider_horizontal.CurrentValue or 1
   local expansionIndex = 0
   local expansionSliderValue = core.slider_vertical and core.slider_vertical.CurrentValue or 1
   local currentToon = core.db.Toons[thisToon]
+  local toonColumnWidth = 120
+  local factionColumnWidth = 240
+  local rowHeight = 24
+  local columnIndex = 0
+  local rowIndex = 0
 
   local sort = nil
   if factionIdForOrdering ~= nil then 
@@ -1325,19 +1359,92 @@ function core:GetTooltip(frame)
     sort = characterSort
   end
 
-  for toonId, toon in sortedPairs(core.db.Toons, sort, characterFilter) do
-    if toon and toon.Show then
-      toonIndex = toonIndex + 1
-      if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
-        if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;
-        columns[toonId] = columns[toonId] or tooltip:AddColumn("CENTER")
-        local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
-        tooltip:SetCell(header, columns[toonId], ClassColorise(toon.Class, toonname), "CENTER")
-        tooltip:SetCellScript(header, columns[toonId], "OnEnter", ShowToonTooltip, toonId)
-        tooltip:SetCellScript(header, columns[toonId], "OnLeave", CloseTooltips)
+  for _, row in pairs(displayTable) do
+    if row.RowFrame then
+      row.RowFrame:Hide()
+      if row.ChildFrames then
+        for _, childFrame in pairs(row.ChildFrames) do
+          if childFrame ~= nil and childFrame.Frame ~= nil then
+            childFrame.Frame:Hide()
+          end
+        end
       end
     end
   end
+
+  for toonId, toon in sortedPairs(core.db.Toons, sort, characterFilter) do
+    if toon and toon.Show then
+      toonIndex = toonIndex + 1
+      if not displayTable[0] then
+        local toonHeaderFrame = CreateFrame("Frame","AltRepsToonHeaderFrame", frame, "BackdropTemplate")
+        toonHeaderFrame:SetPoint("TOPLEFT", frame ,"TOPLEFT", 0, -20)
+        toonHeaderFrame:SetPoint("BOTTOMRIGHT", frame ,"TOPRIGHT", 0, -20 - rowHeight)
+        local l = toonHeaderFrame:CreateLine()
+        l:SetColorTexture(0, 0, 0 , 0.6)
+        l:SetStartPoint("BOTTOMLEFT",0,0)
+        l:SetEndPoint("BOTTOMRIGHT",0,0)
+        l:SetThickness(1)
+        displayTable[0] = {
+          RowFrame = toonHeaderFrame,
+          ChildFrames = {}
+        }
+      end
+
+      displayTable[0].RowFrame:Show()
+      
+      if not displayTable[0].SummaryFrame then
+        local sumamryFrame = CreateFrame("Frame","AltRepsSummaryFrame", displayTable[0].RowFrame, "BackdropTemplate")
+        sumamryFrame:SetPoint("TOPLEFT", displayTable[0].RowFrame ,"TOPLEFT", 0, 0)
+        sumamryFrame:SetSize(factionColumnWidth, rowHeight)
+        local sumamryTitle = sumamryFrame:CreateFontString(sumamryFrame, "OVERLAY", "GameTooltipText")
+        sumamryTitle:SetPoint("CENTER", 0, 0)
+        sumamryFrame.Text = sumamryTitle
+        sumamryFrame.Text:SetText(GOLDFONT .. "Summary" .. FONTEND)
+
+        sumamryFrame:HookScript("OnEnter", function(self)
+          ShowOverallTooltip(sumamryFrame)
+        end)
+        sumamryFrame:HookScript("OnLeave", function(self) 
+          CloseTooltips()
+        end)
+        displayTable[0].SummaryFrame = sumamryFrame
+      end
+
+      if toonIndex < (core.db.Options.MaxCharacters + toonSliderValue) and toonIndex >= toonSliderValue then
+        if toon.Faction == "Alliance" then hasAlliance = toon.Faction elseif toon.Faction == "Horde" then hasHorde = toon.Faction end;        
+        local toonname, toonserver = toonId:match('^(.*)[-](.*)$')
+        columnIndex = columnIndex + 1
+
+        if not displayTable[0].ChildFrames[columnIndex] then
+          local i = columnIndex
+          local toonFrame = CreateFrame("Frame","AltRepsToonHeaderFrame"..columnIndex, displayTable[0].RowFrame, "BackdropTemplate")
+          toonFrame:SetPoint("TOPLEFT", displayTable[0].RowFrame ,"TOPLEFT", factionColumnWidth + (columnIndex - 1) * toonColumnWidth, 0)
+          toonFrame:SetSize(toonColumnWidth, rowHeight)
+          
+          toonFrame:HookScript("OnEnter", function(self)
+            ShowToonTooltip(self, displayTable[0].ChildFrames[i].ToonId)
+          end)
+          toonFrame:HookScript("OnLeave", function(self) 
+            CloseTooltips()
+          end)
+
+          displayTable[0].ChildFrames[columnIndex] = {
+            Frame = toonFrame
+          }
+        end
+
+        displayTable[0].ChildFrames[columnIndex].ToonId = toonId
+        displayTable[0].ChildFrames[columnIndex].Frame:Show()
+        if not displayTable[0].ChildFrames[columnIndex].Text then
+          local text = displayTable[0].ChildFrames[columnIndex].Frame:CreateFontString(displayTable[0].ChildFrames[columnIndex], "OVERLAY", "GameTooltipText")
+          text:SetPoint("CENTER", 0, 0)
+          displayTable[0].ChildFrames[columnIndex].Text = text
+        end
+        displayTable[0].ChildFrames[columnIndex].Text:SetText(ClassColorise(toon.Class, toonname))
+      end
+    end
+  end
+
   for _, expansion in sortedPairs(core.db.Expansions) do
     if expansion and expansion.Show then
       expansionIndex = expansionIndex + 1
@@ -1346,89 +1453,222 @@ function core:GetTooltip(frame)
         for factionId, faction in sortedPairs(core.db.Factions) do
           if (faction.Show and expansion.Id == faction.ExpansionId and (string.find(faction.For, hasAlliance) or string.find(faction.For, hasHorde))) then
             if not hasExpansionRowBeenAdded then
-              local expansionRow = tooltip:AddLine();    
-              tooltip:SetCell(expansionRow, 1, GOLDFONT .. expansion.Name .. FONTEND)
+              rowIndex = rowIndex + 1
+              if not displayTable[rowIndex] then
+                local rowFrame = CreateFrame("Frame","AltRepsFactionRowFrame"..rowIndex, frame, "BackdropTemplate")
+                rowFrame:SetPoint("TOPLEFT", frame ,"TOPLEFT", 0, -rowHeight - rowIndex * rowHeight)
+                rowFrame:SetPoint("BOTTOMRIGHT", frame ,"TOPRIGHT", 0, -rowHeight - (rowIndex + 1) * rowHeight)
+                local l = rowFrame:CreateLine()
+                l:SetColorTexture(0, 0, 0, 0.6)
+                l:SetStartPoint("BOTTOMLEFT", 0, 0)
+                l:SetEndPoint("BOTTOMRIGHT", 0, 0)
+                l:SetThickness(1)
+                displayTable[rowIndex] = {
+                  RowFrame = rowFrame,
+                  ChildFrames = {}
+                }
+              end
+              if not displayTable[rowIndex].ChildFrames[0] then
+                local rowFrame = CreateFrame("Frame","AltRepsFactionRowHeaderFrame"..rowIndex, displayTable[rowIndex].RowFrame, "BackdropTemplate")
+                rowFrame:SetPoint("TOPLEFT", displayTable[rowIndex].RowFrame, "TOPLEFT", 0, 0)
+                rowFrame:SetSize(factionColumnWidth, rowHeight)
+                local text = rowFrame:CreateFontString(rowFrame, "OVERLAY", "GameTooltipText")
+                text:SetPoint("CENTER", 0, 0)
+                rowFrame.Text = text
+                displayTable[rowIndex].ChildFrames[0] = {
+                  Frame = rowFrame
+                }
+              end
+              displayTable[rowIndex].ChildFrames[0].FactionId = nil
+              displayTable[rowIndex].ChildFrames[0].Frame.Text:SetText(GOLDFONT .. expansion.Name .. FONTEND)
+              displayTable[rowIndex].ChildFrames[0].Frame:Show()
+              displayTable[rowIndex].RowFrame:Show()
               hasExpansionRowBeenAdded = true
             end
-            rows[factionId] = rows[factionId] or tooltip:AddLine();
-            if factionId == factionIdForOrdering then factionHighlightRow = rows[factionId] end
+
+            rowIndex = rowIndex + 1
+            if not displayTable[rowIndex] then
+              local rowFrame = CreateFrame("Frame","AltRepsFactionRowFrame"..rowIndex, frame, "BackdropTemplate")
+              rowFrame:SetPoint("TOPLEFT", frame ,"TOPLEFT", 0, -rowHeight - rowIndex * rowHeight)
+              rowFrame:SetPoint("BOTTOMRIGHT", frame ,"TOPRIGHT", 0, -rowHeight - (rowIndex + 1) * rowHeight)
+              local l = rowFrame:CreateLine()
+              l:SetColorTexture(0, 0, 0 , 0.6)
+              l:SetStartPoint("BOTTOMLEFT",0,0)
+              l:SetEndPoint("BOTTOMRIGHT",0,0)
+              l:SetThickness(1)
+              displayTable[rowIndex] = {
+                RowFrame = rowFrame,
+                ChildFrames = {}
+              }
+            end
+            if not displayTable[rowIndex].ChildFrames[0] then
+              local rowFrame = CreateFrame("Frame","AltRepsFactionRowHeaderFrame"..rowIndex, displayTable[rowIndex].RowFrame, "BackdropTemplate")
+              rowFrame:SetPoint("TOPLEFT", displayTable[rowIndex].RowFrame, "TOPLEFT", 0, 0)
+              rowFrame:SetSize(factionColumnWidth, rowHeight)
+              local text = rowFrame:CreateFontString(rowFrame, "OVERLAY", "GameTooltipText")
+              text:SetPoint("CENTER", 0, 0)
+              rowFrame.Text = text
+              local r = rowIndex
+              rowFrame:HookScript("OnEnter", function(self)
+                ShowFactionTooltip(rowFrame, displayTable[r].ChildFrames[0].FactionId)
+              end)
+              rowFrame:HookScript("OnLeave", function(self) 
+                CloseTooltips()
+              end)
+              rowFrame:HookScript("OnMouseDown", function(frame, button)
+                if button == "LeftButton" then
+                  core:SetFactionOrdering(displayTable[r].ChildFrames[0].FactionId)
+                end
+              end)
+              displayTable[rowIndex].ChildFrames[0] = {
+                Frame = rowFrame
+              }
+            end
+
+            displayTable[rowIndex].ChildFrames[0].FactionId = factionId
+            displayTable[rowIndex].ChildFrames[0].Frame.Text:SetText(YELLOWFONT .. faction.Name .. FONTEND)
+            displayTable[rowIndex].ChildFrames[0].Frame:Show()
+            displayTable[rowIndex].RowFrame:Show()
+
           end
         end
       end
     end
   end
-  for factionId, row in pairs(rows) do
-    local faction = core.db.Factions[factionId]
-    tooltip:SetCell(row, 1, YELLOWFONT .. faction.Name .. FONTEND)
-    tooltip:SetLineScript(row, "OnMouseDown", function() 
-      core:SetFactionOrdering(factionId)
-    end )
-    for toonName, toon in pairs(core.db.Toons) do
-      if toon and toon.Show and columns[toonName] then
-        local rep = toon.Reps[factionId]
-        if rep then
-          local display = ""
-          if rep.ParagonValue then
-            display = mod(rep.ParagonValue, rep.ParagonThreshold) .. " / " .. rep.ParagonThreshold
-            local color = core.db.Options.StandingColours[9]
-            if core.db.Options.ColourReputations then display = ColorCodeOpen(color) .. display .. FONTEND end
-            if rep.HasParagonReward then display = display .. " " .. paragonLootTextureString end
-          elseif rep.Current then
-            local color = core.db.Options.StandingColours[rep.Standing]
-            display = rep.Current .. " / " .. rep.Max
-            if core.db.Options.ColourReputations then display = ColorCodeOpen(color) .. display .. FONTEND end
+
+  for tableRowIndex, row in sortedPairs(displayTable) do
+    if tableRowIndex ~= 0 then 
+      for tableColumnIndex, column in sortedPairs(displayTable[0].ChildFrames) do
+        if tableColumnIndex < core.db.Options.MaxCharacters + 1 then
+          if not displayTable[tableRowIndex].ChildFrames[tableColumnIndex] then
+            local dataFrame = CreateFrame("Frame","AltRepsDataFrame"..tableRowIndex.."_"..tableColumnIndex, displayTable[tableRowIndex].RowFrame, "BackdropTemplate")
+            dataFrame:SetPoint("TOPLEFT", displayTable[tableRowIndex].RowFrame, "TOPLEFT", factionColumnWidth + toonColumnWidth * (tableColumnIndex - 1), 0)
+            dataFrame:SetSize(toonColumnWidth, rowHeight)
+            displayTable[tableRowIndex].ChildFrames[tableColumnIndex] = {
+              Frame = dataFrame
+            }
           end
-          tooltip:SetCell(row, columns[toonName], format(display))
-          tooltip:SetCellScript(row, columns[toonName], "OnEnter", ShowFactionTooltip, { factionId = factionId, toonId = toonName})
-          tooltip:SetCellScript(row, columns[toonName], "OnLeave", CloseTooltips)
+          local dataFrame = displayTable[tableRowIndex].ChildFrames[tableColumnIndex].Frame
+          dataFrame:Show()
+
+          if row and row.ChildFrames and row.ChildFrames[0].FactionId then
+            if not dataFrame.Progress then 
+              local progress = CreateFrame("StatusBar", nil, dataFrame, "BackdropTemplate")
+              progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+              progress:SetPoint("CENTER", dataFrame, "CENTER", 0, 0)
+              progress:SetSize(toonColumnWidth * 0.8, rowHeight * 0.7)
+              local tex = progress:CreateTexture(nil, "BACKGROUND")
+              tex:SetAllPoints()
+              tex:SetColorTexture(0, 0, 0, 0.8)
+              progress.Texture = tex          
+              progress.Value = progress:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+              progress.Value:SetPoint("CENTER", progress)
+              progress.Value:SetTextColor(1, 1, 1)
+              core:SkinFrame(progress, nil, {0,0,0})
+              dataFrame.Progress = progress
+
+              dataFrame.Progress:HookScript("OnEnter", function(self) 
+                self.Value:SetText(self.Value.rolloverText) 
+                ShowToonFactionTooltip(self, { factionId = row.ChildFrames[0].FactionId, toonId = column.ToonId})
+              end)
+              dataFrame.Progress:HookScript("OnLeave", function(self) 
+                self.Value:SetText(self.Value.standing) 
+                CloseTooltips()
+              end)
+            end
+          end
+
+          local toon = core.db.Toons[column.ToonId]
+          local factionId = row.ChildFrames[0].FactionId;
+          local faction = core.db.Factions[factionId]
+          local rep = toon.Reps[factionId]
+
+          if dataFrame.Progress and row and row.ChildFrames then
+            if not factionId then
+              dataFrame.Progress:Hide()
+            else
+              dataFrame.Progress:Show()
+            end
+
+            local color
+            local value, threshold = 0, 0
+            if rep then
+              if rep.FriendTextLevel ~= nil then
+                dataFrame.Progress.Value.standing = rep.FriendTextLevel
+              elseif rep.ParagonValue then
+                dataFrame.Progress.Value.standing = "Paragon"
+                if rep.HasParagonReward then dataFrame.Progress.Value.standing = dataFrame.Progress.Value.standing .. " " .. paragonLootTextureString end
+              else
+                dataFrame.Progress.Value.standing = factionStandings[rep.Standing]
+              end
+              
+              if rep.ParagonValue then
+                color = standingColours.Blue
+              elseif rep.FriendTextLevel then
+                color = standingColours.Green
+              elseif rep.Standing < 4 and not rep.FriendTextLevel then
+                color = standingColours.Red
+              elseif rep.Standing == 4 then
+                color = standingColours.Yellow
+              else
+                color = standingColours.Green
+              end
+    
+              
+              if rep.ParagonValue then
+                value = mod(rep.ParagonValue, rep.ParagonThreshold)
+                threshold = rep.ParagonThreshold
+              else
+                value = rep.Current
+                threshold = rep.Max            
+              end
+            else
+              dataFrame.Progress.Value.standing = "Unknown"
+              color = standingColours.Yellow
+            end
+    
+            dataFrame.Progress:SetMinMaxValues(0, threshold)
+            dataFrame.Progress:SetValue(value)
+    
+            dataFrame.Progress.Value.rolloverText = HIGHLIGHT_FONT_COLOR_CODE.." "..format(REPUTATION_PROGRESS_FORMAT,BreakUpLargeNumbers(value),BreakUpLargeNumbers(threshold))..FONT_COLOR_CODE_CLOSE
+            dataFrame.Progress.Value:SetText(dataFrame.Progress.Value.standing)
+    
+            dataFrame.Progress:SetStatusBarColor(unpack(color))        
+          end
         end
       end
     end
   end
-  local hi = true
-  for i=2,tooltip:GetLineCount() do
-    tooltip:SetLineScript(i, "OnEnter", DoNothing)
-    tooltip:SetLineScript(i, "OnLeave", DoNothing)
 
-    if hi then
-      tooltip:SetLineColor(i, 1, 1, 1, 0.1)
-      hi = false
-    else
-      tooltip:SetLineColor(i, 0, 0, 0, 0)
-      hi = true
-    end
+  local baseWidth = columnIndex  * toonColumnWidth + factionColumnWidth
+  local baseHeight = rowHeight * rowIndex + 40
+  local adjustWidth, adjustHeight = 0, 0
 
-    if factionHighlightRow == i then
-      tooltip:SetLineColor(i, 0.9803921568627451, 1, 0.392156862745098, 0.4)
-    end
-  end
-  local w,h = tooltip:GetSize()
-  frame:SetSize(w*tooltip:GetScale(),(h+20)*tooltip:GetScale())
-  core:SkinFrame(tooltip,"AltRepsTooltip")
-  LibQTip.layoutCleaner:CleanupLayouts()
-  tooltip:ClearAllPoints()
-  tooltip:SetPoint("TOPLEFT",frame, "TOPLEFT", 0, -20)
-  tooltip:SetFrameLevel(frame:GetFrameLevel()+1)
-  core.tooltip.OnRelease = function() core.tooltip = nil end
-  -- tooltip:UpdateScrolling(300)
-  tooltip:Show()
+  local toonCount = tableLengthWithShow(core.db.Toons)
+  local showHorizontalScroll = toonCount > core.db.Options.MaxCharacters
 
-  local w,h = frame:GetSize()
+  local expansionCount = tableLengthWithShow(core.db.Expansions)
+  local showVerticalScroll = expansionCount > core.db.Options.MaxExpansions
 
-  local toonCount = tablelength(core.db.Toons)
-  if toonCount > core.db.Options.MaxCharacters then
-    core:GetSliderHorizontal(frame, toonCount, w, h)
+  if showHorizontalScroll then adjustWidth = 10 end
+  if showVerticalScroll then adjustHeight = 30 end
+    
+  frame:SetSize(baseWidth + adjustWidth, baseHeight + adjustHeight)
+  
+  if showHorizontalScroll then
+    core:GetSliderHorizontal(frame, toonCount, baseWidth + adjustWidth, baseHeight + adjustHeight)
   elseif core.slider_horizontal and core.slider_horizontal:IsShown() then
     core.slider_horizontal:Hide()
+    frame:SetWidth(columnIndex  * toonColumnWidth + factionColumnWidth)
   end
 
-  local expansionCount = tablelength(core.db.Expansions)
-  if expansionCount > core.db.Options.MaxExpansions then
-    core:GetSliderVertical(frame, expansionCount, w, h)
+  
+  if showVerticalScroll then
+    core:GetSliderVertical(frame, expansionCount, baseWidth + adjustWidth, baseHeight + adjustHeight)
   elseif core.slider_vertical and core.slider_vertical:IsShown() then
     core.slider_vertical:Hide()
   end
-
+  
   debug("GetTooltip: End")
 end
 
@@ -1445,7 +1685,7 @@ local BACKDROP_SLIDER = {
 function core:GetSliderHorizontal(frame, toonCount, w, h)
   if not core.slider_horizontal then
     local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrameHorizontal", frame, "BackdropTemplate")
-    scrollBarFrame:SetPoint("BOTTOMLEFT",frame)
+    scrollBarFrame:SetPoint("BOTTOMLEFT", frame, 15, 0)
     scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
     scrollBarFrame:SetOrientation('HORIZONTAL')
     scrollBarFrame:SetBackdrop(BACKDROP_SLIDER)
@@ -1461,9 +1701,9 @@ function core:GetSliderHorizontal(frame, toonCount, w, h)
     end)
     core.slider_horizontal = scrollBarFrame
   end
-  frame:SetHeight(h + 20)
+  
   core.slider_horizontal:SetMinMaxValues(1, (toonCount + 1) - core.db.Options.MaxCharacters)
-  core.slider_horizontal:SetSize(w*frame:GetScale(),20)
+  core.slider_horizontal:SetSize(w*frame:GetScale() - 30, 20)
   if core.slider_horizontal.CurrentValue == nil then
     core.slider_horizontal:SetValue(1)
   end
@@ -1474,7 +1714,7 @@ end
 function core:GetSliderVertical(frame, expansionCount, w, h)
   if not core.slider_vertical then
     local scrollBarFrame = CreateFrame("Slider","AltRepsScrollBarFrameVertical", frame, "BackdropTemplate")
-    scrollBarFrame:SetPoint("TOPRIGHT",frame, "TOPRIGHT", -3, -20)
+    scrollBarFrame:SetPoint("TOPRIGHT",frame, "TOPRIGHT", -3, -35)
     scrollBarFrame:SetFrameLevel(frame:GetFrameLevel()+2)
     scrollBarFrame:SetOrientation('VERTICAL')
     scrollBarFrame:SetBackdrop(BACKDROP_SLIDER)
@@ -1490,9 +1730,8 @@ function core:GetSliderVertical(frame, expansionCount, w, h)
     end)
     core.slider_vertical = scrollBarFrame
   end
-  frame:SetWidth(w + 20)
   core.slider_vertical:SetMinMaxValues(1, (expansionCount + 1) - core.db.Options.MaxExpansions)
-  core.slider_vertical:SetSize(14,(h - 20)*frame:GetScale())
+  core.slider_vertical:SetSize(14,h*frame:GetScale() - 50)
   if core.slider_vertical.CurrentValue == nil then
     core.slider_vertical:SetValue(1)
   end
@@ -1590,23 +1829,30 @@ function core:ReopenConfigDisplay(frame)
   end
 end
 
-function core:SkinFrame(frame,name)
+function core:SkinFrame(frame,name, color)
   if IsAddOnLoaded("ElvUI") or IsAddOnLoaded("Tukui") then
     if frame.StripTextures then
       frame:StripTextures()
     end
-    if frame.SetTemplate then
-      frame:SetTemplate("Transparent")
+    if frame.CreateBackdrop then
+      frame:CreateBackdrop("Transparent")
     end
-    local close = _G[name.."CloseButton"] or frame.CloseButton
-    if close and close.SetAlpha then
+    if name then
+      local close = _G[name.."CloseButton"] or frame.CloseButton
+      if close and close.SetAlpha then
+        if ElvUI then
+          ElvUI[1]:GetModule('Skins'):HandleCloseButton(close)
+        end
+        if Tukui and Tukui[1] and Tukui[1].SkinCloseButton then
+          Tukui[1].SkinCloseButton(close)
+        end
+        close:SetAlpha(1)
+      end
+    end
+    if color then
       if ElvUI then
-        ElvUI[1]:GetModule('Skins'):HandleCloseButton(close)
+        ElvUI[1]:GetModule('Skins'):HandleStatusBar(frame, color)
       end
-      if Tukui and Tukui[1] and Tukui[1].SkinCloseButton then
-        Tukui[1].SkinCloseButton(close)
-      end
-      close:SetAlpha(1)
     end
   end
 end
@@ -1657,17 +1903,6 @@ function core:BuildOptions()
               addon.icon:Refresh(addonName)
             end,
           },
-          ReputationIcon = {
-            type = "toggle",
-            name = "Show reputation tab button",
-            desc = "Show the AltReps button on the reputation tab",
-            order = 4,
-            get = function(info) return core.db.Options.ReputationIcon end,
-            set = function(info, value)
-              core.db.Options.ReputationIcon = value
-              core:SetReputationIconVisibility(value)
-            end,
-          },
           ColourReputations = {
             type = "toggle",
             order = 5,
@@ -1701,7 +1936,7 @@ function core:BuildOptions()
           MaxExpansions = {
             type = "range",
             min = 1,
-            max = 4,
+            max = 3,
             step = 1,
             order = 10,
             name = "Max Expansions",
@@ -1953,17 +2188,7 @@ function core:GetConnectedRealms(server)
   return connectedRealms[server]
 end
 
-function core:SetReputationIconVisibility(visibilityState)
-  if core.repIcon then
-    if visibilityState then
-      core.repIcon:Show()
-    else
-      core.repIcon:Hide()
-    end
-  end
-end
-
-function ShowToonTooltip(cell, arg, ...)
+function ShowToonTooltip(parent, arg, ...)
   local toonId = arg
   if not toonId then return end
   local toon = core.db.Toons[toonId]
@@ -2014,10 +2239,30 @@ function ShowToonTooltip(cell, arg, ...)
   miniTooltip:SetCell(rowNumber, 2, totalSupplies)
   miniTooltip:SetCell(rowNumber, 3, comma_value(totalGold) .. " " .. goldTextureString)
 
-  finishMiniTooltip()
+  finishMiniTooltip(parent)
 end
 
-function ShowFactionTooltip(cell, arg, ...)
+function ShowFactionTooltip(parent, factionId)
+  if not factionId then return end
+  local faction = core.db.Factions[factionId]
+  if not faction then return end
+  openMiniTooltip(2, "LEFT","RIGHT")
+  local headerRow = miniTooltip:AddHeader()
+  miniTooltip:SetCell(headerRow, 1, GOLDFONT .. faction.Name .. FONTEND)
+  miniTooltip:SetCell(headerRow, 2, "ID: " .. factionId)
+  miniTooltip:AddSeparator(6,0,0,0,0)
+  local text
+  if factionIdForOrdering and factionIdForOrdering == factionId then
+    text = YELLOWFONT .. "Left click: " .. FONTEND .. "Order characters in normal order"
+  else
+    text = YELLOWFONT .. "Left click: " .. FONTEND .. "Order characters by decending " .. faction.Name .. " reputation."
+  end
+  miniTooltip:SetCell(miniTooltip:AddLine(), 1, text)
+
+  finishMiniTooltip(parent)
+end
+
+function ShowToonFactionTooltip(parent, arg, ...)
   local factionId = arg.factionId
   local toonId = arg.toonId
   if not factionId then return end
@@ -2027,53 +2272,56 @@ function ShowFactionTooltip(cell, arg, ...)
   local faction = core.db.Factions[factionId]
   if not faction then return end
   local rep = toon.Reps[factionId]
-  if not rep then return end
   openMiniTooltip(2, "LEFT","RIGHT")
-  local ftex = ""
   miniTooltip:SetCell(miniTooltip:AddHeader(), 1, GOLDFONT .. faction.Name .. FONTEND)
   
-  local standingLine = miniTooltip:AddLine()  
-
-  if rep.FriendTextLevel ~= nil then
-    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
-    miniTooltip:SetCell(standingLine, 2, rep.FriendTextLevel)
-    miniTooltip:SetCell(miniTooltip:AddLine(), 1, rep.FriendText, 2)
-  else
-    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
-    miniTooltip:SetCell(standingLine, 2, factionStandings[rep.Standing])
-  end
+  local standingLine = miniTooltip:AddLine()
   
-  if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
-    local suppliesLine = miniTooltip:AddLine()
-    local goldLine = miniTooltip:AddLine()
+  if rep then
+    if rep.FriendTextLevel ~= nil then
+      miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
+      miniTooltip:SetCell(standingLine, 2, rep.FriendTextLevel)
+      miniTooltip:SetCell(miniTooltip:AddLine(), 1, rep.FriendText, 2)
+    else
+      miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
+      miniTooltip:SetCell(standingLine, 2, factionStandings[rep.Standing])
+    end
     
-    local supplyChestValue = 0
-    for _, expansion in pairs(core.db.Expansions) do 
-      if expansion.Id == faction.ExpansionId then
-        supplyChestValue = expansion.SupplyChestValue or 0
+    if rep.HasParagonReward ~= nil and rep.ParagonValue and rep.ParagonThreshold and rep.Standing == 8 then
+      local suppliesLine = miniTooltip:AddLine()
+      local goldLine = miniTooltip:AddLine()
+      
+      local supplyChestValue = 0
+      for _, expansion in pairs(core.db.Expansions) do 
+        if expansion.Id == faction.ExpansionId then
+          supplyChestValue = expansion.SupplyChestValue or 0
+        end
+      end
+
+      local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
+      if rep.HasParagonReward then supplies = supplies - 1 end
+      miniTooltip:SetCell(suppliesLine, 1, YELLOWFONT .. "Supplies: " .. FONTEND)
+      miniTooltip:SetCell(suppliesLine, 2, supplies)
+      
+      miniTooltip:SetCell(goldLine, 1, YELLOWFONT .. "Gold (Approx.): " .. FONTEND)
+      miniTooltip:SetCell(goldLine, 2, comma_value(supplies * supplyChestValue) .. " " .. goldTextureString)
+
+      if rep.HasParagonReward then
+        local suppliesAvailableLine = miniTooltip:AddLine()
+        local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
+        miniTooltip:SetCell(suppliesAvailableLine, 1, YELLOWFONT .. "Supply chest available: " .. FONTEND)
+        miniTooltip:SetCell(suppliesAvailableLine, 2, "|T" .. READY_CHECK_READY_TEXTURE .. ":0|t")
       end
     end
-
-    local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
-    if rep.HasParagonReward then supplies = supplies - 1 end
-    miniTooltip:SetCell(suppliesLine, 1, YELLOWFONT .. "Supplies: " .. FONTEND)
-    miniTooltip:SetCell(suppliesLine, 2, supplies)
-    
-    miniTooltip:SetCell(goldLine, 1, YELLOWFONT .. "Gold (Approx.): " .. FONTEND)
-    miniTooltip:SetCell(goldLine, 2, comma_value(supplies * supplyChestValue) .. " " .. goldTextureString)
-
-    if rep.HasParagonReward then
-      local suppliesAvailableLine = miniTooltip:AddLine()
-      local supplies = math.floor(rep.ParagonValue / rep.ParagonThreshold)
-      miniTooltip:SetCell(suppliesAvailableLine, 1, YELLOWFONT .. "Supply chest available: " .. FONTEND)
-      miniTooltip:SetCell(suppliesAvailableLine, 2, "|T" .. READY_CHECK_READY_TEXTURE .. ":0|t")
-    end
+  else 
+    miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
+    miniTooltip:SetCell(standingLine, 2, "Unknown")
   end
 
-  finishMiniTooltip()
+  finishMiniTooltip(parent)
 end
 
-function ShowOverallTooltip(cell, arg, ...)
+function ShowOverallTooltip(parent, arg, ...)
   openMiniTooltip(3, "LEFT", "RIGHT", "RIGHT")
   miniTooltip:SetCell(miniTooltip:AddHeader(), 1, GOLDFONT .. "AltReps: " .. FONTEND .. YELLOWFONT .. addon.version .. FONTEND)
 
@@ -2116,7 +2364,11 @@ function ShowOverallTooltip(cell, arg, ...)
   miniTooltip:SetCell(rowNumber, 2, totalSupplies)
   miniTooltip:SetCell(rowNumber, 3, comma_value(totalGold) .. " " .. goldTextureString)
 
-  finishMiniTooltip()
+  miniTooltip:AddSeparator(6,0,0,0,0)
+  local authorLine = miniTooltip:AddLine()
+  miniTooltip:SetCell(authorLine, 1, GOLDFONT .. "Made with love by: " .. FONTEND)
+  miniTooltip:SetCell(authorLine, 3, ClassColorise("PALADIN", "Eylwen"))
+  finishMiniTooltip(parent)
 end
 
 function debug(...)
@@ -2158,19 +2410,18 @@ function ColorCodeOpen(color)
 end
 
 function openMiniTooltip(...)
-  miniTooltip = LibQTip:Acquire("SavedInstancesIndicatorTooltip", ...)
+  miniTooltip = LibQTip:Acquire("AltRepsIndicatorTooltip", ...)
   addon.miniTooltip = miniTooltip
   miniTooltip:Clear()
   miniTooltip:SetScale(1)
 end
 
 function finishMiniTooltip(parent)
-  parent = parent or core.tooltip
-  miniTooltip:SetAutoHideDelay(0.1, parent)
+  miniTooltip:SetAutoHideDelay(3, parent)
   miniTooltip.OnRelease = function() miniTooltip = nil end -- extra-safety: update our variable on auto-release
   miniTooltip:SmartAnchorTo(parent)
   miniTooltip:SetFrameLevel(150) -- ensure visibility when forced to overlap main tooltip
-  core:SkinFrame(miniTooltip,"SavedInstancesIndicatorTooltip")
+  core:SkinFrame(miniTooltip,"AltRepsIndicatorTooltip")
   miniTooltip:Show()
 end
 
@@ -2180,11 +2431,18 @@ function CloseTooltips()
   end
 end
 
-function tablelength(T)
+function tableLengthWithShow(T)
   local count = 0
   for _, v in pairs(T) do if v.Show then count = count + 1 end end
   return count
 end
+
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
 
 function comma_value(n) -- credit http://richard.warburton.it
 	local left,num,right = string.match(n,'^([^%d]*%d)(%d*)(.-)$')
