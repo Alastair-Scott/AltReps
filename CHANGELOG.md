@@ -1,3 +1,8 @@
+### Changes: V3.1.0
+
+- Updated game version
+- Reinstated ability to change faction standing colours
+
 ### Changes: V3.0.0
 
 - Updated game version

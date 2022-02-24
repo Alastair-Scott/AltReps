@@ -52,24 +52,24 @@ local factionStandings = {
 
 local standingColours = {
   Red = {
-    0.53333333333333333333333333333333,
-    0.2039215686274509803921568627451,
-    0.14509803921568627450980392156863
+    ["r"] = 0.53333333333333333333333333333333,
+    ["g"] = 0.2039215686274509803921568627451,
+    ["b"] = 0.14509803921568627450980392156863
   },
   Yellow = {
-    0.58823529411764705882352941176471,
-    0.45882352941176470588235294117647,
-    0
+    ["r"] = 0.58823529411764705882352941176471,
+    ["g"] = 0.45882352941176470588235294117647,
+    ["b"] = 0
   },
   Green = {
-    0,
-    0.3921568627450980392156862745098,
-    0.06666666666666666666666666666667
+    ["r"] = 0,
+    ["g"] = 0.3921568627450980392156862745098,
+    ["b"] = 0.06666666666666666666666666666667
   },
   Blue = {
-    0,
-    0.5,
-    0.9
+    ["r"] = 0,
+    ["g"] = 0.5,
+    ["b"] = 0.9
   }
 }
 
@@ -218,6 +218,12 @@ local defaultDB = {
     }
   },
   Factions = {
+    [2478] = {
+      Name = "The Enlightened",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    },
     [2470] = {
       Name = "Death's Advance",
         Show = true,
@@ -1105,7 +1111,8 @@ function core:OnInitialize()
   
   if not AltRepsDB.DBVersion or AltRepsDB.DBVersion < 1 then
     AltRepsDB = defaultDB
-  elseif AltRepsDB.DBVersion < 3 then
+  end
+  if AltRepsDB.DBVersion < 3 then
     AltRepsDB.Window = defaultDB.Window
     AltRepsDB.Options = defaultDB.Options
     AltRepsDB.Factions = defaultDB.Factions
@@ -1114,10 +1121,12 @@ function core:OnInitialize()
         toon.Show = true
       end
     end
-  elseif AltRepsDB.DBVersion < 4 then
+  end
+  if AltRepsDB.DBVersion < 4 then
     AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
     AltRepsDB.DBVersion = 4
-  elseif AltRepsDB.DBVersion < 5 then
+  end
+  if AltRepsDB.DBVersion < 5 then
     for _, toon in pairs(AltRepsDB.Toons) do
       if toon and not toon.SuppliesCopperTotal == nil then
         toon.SuppliesCopperTotal = nil
@@ -1126,7 +1135,8 @@ function core:OnInitialize()
     AltRepsDB.Expansions = defaultDB.Expansions
     AltRepsDB.Options.FontSize = nil
     AltRepsDB.DBVersion = 5
-  elseif AltRepsDB.DBVersion < 6 then
+  end
+  if AltRepsDB.DBVersion < 6 then
     AltRepsDB.Options.ShowCharactersFromServerOption = defaultDB.Options.ShowCharactersFromServerOption 
     AltRepsDB.Options.GroupCharactersByServerOption = defaultDB.Options.GroupCharactersByServerOption
     for toonId, toon in pairs(AltRepsDB.Toons) do
@@ -1137,28 +1147,33 @@ function core:OnInitialize()
       toon.SortOrder = 25
     end
     AltRepsDB.DBVersion = 6
-  elseif AltRepsDB.DBVersion < 7 then
+  end
+  if AltRepsDB.DBVersion < 7 then
     AltRepsDB.Expansions = defaultDB.Expansions
     AltRepsDB.Factions = defaultDB.Factions
     AltRepsDB.Options.MaxExpansions = defaultDB.Options.MaxExpansions
     AltRepsDB.DBVersion = 7
-  elseif AltRepsDB.DBVersion < 8 then
+  end
+  if AltRepsDB.DBVersion < 8 then
     AltRepsDB.Expansions = defaultDB.Expansions
     AltRepsDB.Factions = defaultDB.Factions
     AltRepsDB.Options.Debug = nil
     AltRepsDB.Options.ColourParagon = nil
     AltRepsDB.Options.ColourReputations = defaultDB.Options.ColourReputations
     AltRepsDB.Options.StandingColours = defaultDB.Options.StandingColours
-  elseif AltRepsDB.DBVersion < 9 then
+  end
+  if AltRepsDB.DBVersion < 9 then
     AltRepsDB.Expansions = defaultDB.Expansions
-  elseif AltRepsDB.DBVersion < 10 then
+  end
+  if AltRepsDB.DBVersion < 10 then
     AltRepsDB.Factions[2432] = {
       Name = "Ve'nari",
         Show = true,
         ExpansionId = 9,
         For = "Alliance;Horde"
     }
-  elseif AltRepsDB.DBVersion < 11 then
+  end
+  if AltRepsDB.DBVersion < 11 then
     AltRepsDB.Factions[2470] = {
       Name = "Death's Advance",
         Show = true,
@@ -1181,7 +1196,17 @@ function core:OnInitialize()
     if AltRepsDB.Options.MaxExpansions > 3 then
       AltRepsDB.Options.MaxExpansions = 3
     end
-    AltRepsDB.DBVersion = 11
+    AltRepsDB.DBVersion = 11  
+  end
+  if AltRepsDB.DBVersion < 12 then
+    AltRepsDB.Factions[2478] = {
+      Name = "The Enlightened",
+        Show = true,
+        ExpansionId = 9,
+        For = "Alliance;Horde"
+    }
+    core:ResetFactionColours(AltRepsDB)
+    AltRepsDB.DBVersion = 12
   end
 
   core.db = AltRepsDB
@@ -1603,15 +1628,11 @@ function core:GetTooltip(frame)
               end
               
               if rep.ParagonValue then
-                color = standingColours.Blue
+                color = core.db.Options.StandingColours[9]
               elseif rep.FriendTextLevel then
-                color = standingColours.Green
-              elseif rep.Standing < 4 and not rep.FriendTextLevel then
-                color = standingColours.Red
-              elseif rep.Standing == 4 then
-                color = standingColours.Yellow
+                color = core.db.Options.StandingColours[5]
               else
-                color = standingColours.Green
+                color = core.db.Options.StandingColours[rep.Standing]
               end
     
               
@@ -1624,7 +1645,7 @@ function core:GetTooltip(frame)
               end
             else
               dataFrame.Progress.Value.standing = "Unknown"
-              color = standingColours.Yellow
+              color = core.db.Options.StandingColours[0]
             end
     
             dataFrame.Progress:SetMinMaxValues(0, threshold)
@@ -1633,7 +1654,7 @@ function core:GetTooltip(frame)
             dataFrame.Progress.Value.rolloverText = HIGHLIGHT_FONT_COLOR_CODE.." "..format(REPUTATION_PROGRESS_FORMAT,BreakUpLargeNumbers(value),BreakUpLargeNumbers(threshold))..FONT_COLOR_CODE_CLOSE
             dataFrame.Progress.Value:SetText(dataFrame.Progress.Value.standing)
     
-            dataFrame.Progress:SetStatusBarColor(unpack(color))        
+            dataFrame.Progress:SetStatusBarColor(color.r, color.g, color.b, 1)        
           end
         end
       end
@@ -1668,8 +1689,6 @@ function core:GetTooltip(frame)
   elseif core.slider_vertical and core.slider_vertical:IsShown() then
     core.slider_vertical:Hide()
   end
-  
-  debug("GetTooltip: End")
 end
 
 local BACKDROP_SLIDER = {
@@ -1750,11 +1769,9 @@ function core:SetFactionOrdering(factionId)
 end
 
 function core:UpdateTooltip()
-  debug("UpdateTooltip: Start")
   if core.frame and core.frame:IsShown() then
     core:GetTooltip(core.frame)
   end
-  debug("UpdateTooltip: End")
 end
 
 function core:ToonInit()
@@ -1767,7 +1784,6 @@ function core:ToonInit()
 end
 
 function core:UpdateReps()
-  debug("UpdateReps: Start")
   local toon = core.db.Toons[thisToon]
   for factionId, _ in pairs(core.db.Factions) do
     local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
@@ -1796,7 +1812,6 @@ function core:UpdateReps()
     end
   end
   core:UpdateTooltip()
-  debug("UpdateReps: End")
 end
 
 function core:ToggleVisibility(info)
@@ -1853,6 +1868,20 @@ function core:SkinFrame(frame,name, color)
       if ElvUI then
         ElvUI[1]:GetModule('Skins'):HandleStatusBar(frame, color)
       end
+    end
+  end
+end
+
+function core:ResetFactionColours(db)
+  for standingId, _ in pairs(factionStandings) do
+    if standingId == 9 then
+      db.Options.StandingColours[standingId] = { ["r"] = standingColours.Blue.r, ["g"] = standingColours.Blue.g, ["b"] = standingColours.Blue.b }
+    elseif standingId > 4 then
+      db.Options.StandingColours[standingId] = { ["r"] = standingColours.Green.r, ["g"] = standingColours.Green.g, ["b"] = standingColours.Green.b }
+    elseif standingId == 4 or standingId == 0 then
+      db.Options.StandingColours[standingId] = { ["r"] = standingColours.Yellow.r, ["g"] = standingColours.Yellow.g, ["b"] = standingColours.Yellow.b }
+    else
+      db.Options.StandingColours[standingId] = { ["r"] = standingColours.Red.r, ["g"] = standingColours.Red.g, ["b"] = standingColours.Red.b }
     end
   end
 end
@@ -1919,6 +1948,26 @@ function core:BuildOptions()
             type = "header",
             name = "Faction standing colours",
             cmdHidden = true,
+          },
+          ResetReputationColoursHeader= {
+            order = 100,
+            type = "header",
+            name = "",
+            cmdHidden = true,
+          },
+          ResetReputationColours = {
+            order = 110,
+            type = "execute",
+            name = "Reset",
+            desc = "Reset standing colours back to their defaults. ",
+            confirm = function(info)
+              return "Are you sure you wish to reset the standing colours back to their defaults?"
+            end,
+            func = function ()
+              core:ResetFactionColours(core.db)
+              core:BuildOptions()
+              core:UpdateTooltip()
+            end,
           },
         },
       },
@@ -2369,12 +2418,6 @@ function ShowOverallTooltip(parent, arg, ...)
   miniTooltip:SetCell(authorLine, 1, GOLDFONT .. "Made with love by: " .. FONTEND)
   miniTooltip:SetCell(authorLine, 3, ClassColorise("PALADIN", "Eylwen"))
   finishMiniTooltip(parent)
-end
-
-function debug(...)
-  if core.db.Options.Debug then
-    chatMsg(...)
-  end
 end
 
 function chatMsg(...)
