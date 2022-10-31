@@ -8,6 +8,7 @@ local pairs = pairs
 local next = next
 
 local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
+local C_GossipInfo_GetFriendshipReputation = C_GossipInfo.GetFriendshipReputation
 
 local miniTooltip = nil
 local thisServer = GetRealmName()
@@ -1264,7 +1265,7 @@ function core:GetWindow()
     titleTexture:SetAllPoints()
     titleTexture:SetColorTexture(0, 0, 0, 0.9)
 
-    local title = titleFrame:CreateFontString(titleFrame, "OVERLAY", "GameTooltipText")
+    local title = titleFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("CENTER", 0, 0)
     title:SetText(GOLDFONT .. "AltReps: " .. FONTEND .. YELLOWFONT .. addon.version .. FONTEND)
 
@@ -1421,7 +1422,7 @@ function core:GetTooltip(frame)
         local sumamryFrame = CreateFrame("Frame","AltRepsSummaryFrame", displayTable[0].RowFrame, "BackdropTemplate")
         sumamryFrame:SetPoint("TOPLEFT", displayTable[0].RowFrame ,"TOPLEFT", 0, 0)
         sumamryFrame:SetSize(factionColumnWidth, rowHeight)
-        local sumamryTitle = sumamryFrame:CreateFontString(sumamryFrame, "OVERLAY", "GameTooltipText")
+        local sumamryTitle = sumamryFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         sumamryTitle:SetPoint("CENTER", 0, 0)
         sumamryFrame.Text = sumamryTitle
         sumamryFrame.Text:SetText(GOLDFONT .. "Summary" .. FONTEND)
@@ -1461,7 +1462,7 @@ function core:GetTooltip(frame)
         displayTable[0].ChildFrames[columnIndex].ToonId = toonId
         displayTable[0].ChildFrames[columnIndex].Frame:Show()
         if not displayTable[0].ChildFrames[columnIndex].Text then
-          local text = displayTable[0].ChildFrames[columnIndex].Frame:CreateFontString(displayTable[0].ChildFrames[columnIndex], "OVERLAY", "GameTooltipText")
+          local text = displayTable[0].ChildFrames[columnIndex].Frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
           text:SetPoint("CENTER", 0, 0)
           displayTable[0].ChildFrames[columnIndex].Text = text
         end
@@ -1497,7 +1498,7 @@ function core:GetTooltip(frame)
                 local rowFrame = CreateFrame("Frame","AltRepsFactionRowHeaderFrame"..rowIndex, displayTable[rowIndex].RowFrame, "BackdropTemplate")
                 rowFrame:SetPoint("TOPLEFT", displayTable[rowIndex].RowFrame, "TOPLEFT", 0, 0)
                 rowFrame:SetSize(factionColumnWidth, rowHeight)
-                local text = rowFrame:CreateFontString(rowFrame, "OVERLAY", "GameTooltipText")
+                local text = rowFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
                 text:SetPoint("CENTER", 0, 0)
                 rowFrame.Text = text
                 displayTable[rowIndex].ChildFrames[0] = {
@@ -1530,7 +1531,7 @@ function core:GetTooltip(frame)
               local rowFrame = CreateFrame("Frame","AltRepsFactionRowHeaderFrame"..rowIndex, displayTable[rowIndex].RowFrame, "BackdropTemplate")
               rowFrame:SetPoint("TOPLEFT", displayTable[rowIndex].RowFrame, "TOPLEFT", 0, 0)
               rowFrame:SetSize(factionColumnWidth, rowHeight)
-              local text = rowFrame:CreateFontString(rowFrame, "OVERLAY", "GameTooltipText")
+              local text = rowFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
               text:SetPoint("CENTER", 0, 0)
               rowFrame.Text = text
               local r = rowIndex
@@ -1586,7 +1587,7 @@ function core:GetTooltip(frame)
               tex:SetAllPoints()
               tex:SetColorTexture(0, 0, 0, 0.8)
               progress.Texture = tex          
-              progress.Value = progress:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+              progress.Value = progress:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
               progress.Value:SetPoint("CENTER", progress)
               progress.Value:SetTextColor(1, 1, 1)
               core:SkinFrame(progress, nil, {0,0,0})
@@ -1604,65 +1605,71 @@ function core:GetTooltip(frame)
           end
 
           local toon = core.db.Toons[column.ToonId]
-          local factionId = row.ChildFrames[0].FactionId;
-          local faction = core.db.Factions[factionId]
-          local rep = toon.Reps[factionId]
 
-          if dataFrame.Progress and row and row.ChildFrames then
-            if not factionId then
-              dataFrame.Progress:Hide()
-            else
-              dataFrame.Progress:Show()
-            end
+          if not toon then
+            dataFrame:Hide()
+          else
+            local factionId = row.ChildFrames[0].FactionId;
+            local faction = core.db.Factions[factionId]
+            if not toon.Reps then toon.Reps = {} end
+            local rep = toon.Reps[factionId]
 
-            local color
-            local value, threshold = 0, 0
-            if rep then
-              if rep.FriendTextLevel ~= nil then
-                dataFrame.Progress.Value.standing = rep.FriendTextLevel
-              elseif rep.ParagonValue then
-                dataFrame.Progress.Value.standing = "Paragon"
-                if rep.HasParagonReward then dataFrame.Progress.Value.standing = dataFrame.Progress.Value.standing .. " " .. paragonLootTextureString end
+            if dataFrame.Progress and row and row.ChildFrames then
+              if not factionId then
+                dataFrame.Progress:Hide()
               else
-                dataFrame.Progress.Value.standing = factionStandings[rep.Standing]
+                dataFrame.Progress:Show()
               end
-              
-              if rep.ParagonValue then
-                color = core.db.Options.StandingColours[9]
-              elseif rep.FriendTextLevel then
-                color = core.db.Options.StandingColours[5]
+
+              local color
+              local value, threshold = 0, 0
+              if rep then
+                if rep.FriendTextLevel ~= nil then
+                  dataFrame.Progress.Value.standing = rep.FriendTextLevel
+                elseif rep.ParagonValue then
+                  dataFrame.Progress.Value.standing = "Paragon"
+                  if rep.HasParagonReward then dataFrame.Progress.Value.standing = dataFrame.Progress.Value.standing .. " " .. paragonLootTextureString end
+                else
+                  dataFrame.Progress.Value.standing = factionStandings[rep.Standing]
+                end
+                
+                if rep.ParagonValue then
+                  color = core.db.Options.StandingColours[9]
+                elseif rep.FriendTextLevel then
+                  color = core.db.Options.StandingColours[5]
+                else
+                  color = core.db.Options.StandingColours[rep.Standing]
+                end
+      
+                
+                if rep.ParagonValue then
+                  value = mod(rep.ParagonValue, rep.ParagonThreshold)
+                  threshold = rep.ParagonThreshold
+                else
+                  value = rep.Current
+                  threshold = rep.Max            
+                end
               else
-                color = core.db.Options.StandingColours[rep.Standing]
+                dataFrame.Progress.Value.standing = "Unknown"
+                color = core.db.Options.StandingColours[0]
               end
-    
-              
-              if rep.ParagonValue then
-                value = mod(rep.ParagonValue, rep.ParagonThreshold)
-                threshold = rep.ParagonThreshold
-              else
-                value = rep.Current
-                threshold = rep.Max            
-              end
-            else
-              dataFrame.Progress.Value.standing = "Unknown"
-              color = core.db.Options.StandingColours[0]
+      
+              dataFrame.Progress:SetMinMaxValues(0, threshold)
+              dataFrame.Progress:SetValue(value)
+      
+              dataFrame.Progress.Value.rolloverText = HIGHLIGHT_FONT_COLOR_CODE.." "..format(REPUTATION_PROGRESS_FORMAT,BreakUpLargeNumbers(value),BreakUpLargeNumbers(threshold))..FONT_COLOR_CODE_CLOSE
+              dataFrame.Progress.Value:SetText(dataFrame.Progress.Value.standing)
+      
+              dataFrame.Progress:SetStatusBarColor(color.r, color.g, color.b, 1)        
             end
-    
-            dataFrame.Progress:SetMinMaxValues(0, threshold)
-            dataFrame.Progress:SetValue(value)
-    
-            dataFrame.Progress.Value.rolloverText = HIGHLIGHT_FONT_COLOR_CODE.." "..format(REPUTATION_PROGRESS_FORMAT,BreakUpLargeNumbers(value),BreakUpLargeNumbers(threshold))..FONT_COLOR_CODE_CLOSE
-            dataFrame.Progress.Value:SetText(dataFrame.Progress.Value.standing)
-    
-            dataFrame.Progress:SetStatusBarColor(color.r, color.g, color.b, 1)        
           end
         end
       end
     end
   end
 
-  local baseWidth = columnIndex  * toonColumnWidth + factionColumnWidth
-  local baseHeight = rowHeight * rowIndex + 40
+  local baseWidth = columnIndex * toonColumnWidth + factionColumnWidth + 10
+  local baseHeight = rowHeight * rowIndex + 50
   local adjustWidth, adjustHeight = 0, 0
 
   local toonCount = tableLengthWithShow(core.db.Toons)
@@ -1680,7 +1687,7 @@ function core:GetTooltip(frame)
     core:GetSliderHorizontal(frame, toonCount, baseWidth + adjustWidth, baseHeight + adjustHeight)
   elseif core.slider_horizontal and core.slider_horizontal:IsShown() then
     core.slider_horizontal:Hide()
-    frame:SetWidth(columnIndex  * toonColumnWidth + factionColumnWidth)
+    frame:SetWidth(baseWidth)
   end
 
   
@@ -1688,6 +1695,7 @@ function core:GetTooltip(frame)
     core:GetSliderVertical(frame, expansionCount, baseWidth + adjustWidth, baseHeight + adjustHeight)
   elseif core.slider_vertical and core.slider_vertical:IsShown() then
     core.slider_vertical:Hide()
+    frame:SetHeight(baseHeight)
   end
 end
 
@@ -1787,8 +1795,8 @@ function core:UpdateReps()
   local toon = core.db.Toons[thisToon]
   for factionId, _ in pairs(core.db.Factions) do
     local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
-    local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionId)
-    local friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold = GetFriendshipReputation(factionId)
+    local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation_GetFactionParagonInfo(factionId)
+    local friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold = C_GossipInfo_GetFriendshipReputation(factionId)
     if not toon.Reps then toon.Reps = {} end
     if not (atWarWith and not canToggleAtWar) and name then
       local current, max = 0, 0
@@ -1826,8 +1834,8 @@ function core:ToggleVisibility(info)
 end
 
 function core:ShowConfig()
-  if _G.InterfaceOptionsFrame:IsShown() then
-    _G.InterfaceOptionsFrame:Hide()
+  if _G.SettingsPanel:IsShown() then
+    _G.SettingsPanel:Hide()
   else
     InterfaceOptionsFrame_OpenToCategory(core.optionsFactionsFrame)
     InterfaceOptionsFrame_OpenToCategory(core.optionsCharactersFrame)
@@ -1836,8 +1844,8 @@ function core:ShowConfig()
 end
 
 function core:ReopenConfigDisplay(frame)
-  if _G.InterfaceOptionsFrame:IsShown() then
-    _G.InterfaceOptionsFrame:Hide()
+  if _G.SettingsPanel:IsShown() then
+    _G.SettingsPanel:Hide()
     InterfaceOptionsFrame_OpenToCategory(core.optionsFactionsFrame)
     InterfaceOptionsFrame_OpenToCategory(core.optionsCharactersFrame)
     InterfaceOptionsFrame_OpenToCategory(frame)
