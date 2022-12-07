@@ -9,6 +9,10 @@ local next = next
 
 local C_Reputation_GetFactionParagonInfo = C_Reputation.GetFactionParagonInfo
 local C_GossipInfo_GetFriendshipReputation = C_GossipInfo.GetFriendshipReputation
+local C_MajorFactions_GetMajorFactionData = C_MajorFactions.GetMajorFactionData
+local C_MajorFactions_HasMaximumRenown = C_MajorFactions.HasMaximumRenown
+local C_MajorFactions_GetRenownRewardsForLevel = C_MajorFactions.GetRenownRewardsForLevel
+local C_MajorFactions_GetRenownLevels = C_MajorFactions.GetRenownLevels
 
 local miniTooltip = nil
 local thisServer = GetRealmName()
@@ -75,12 +79,12 @@ local standingColours = {
 }
 
 local defaultDB = {
-  DBVersion = 10,
+  DBVersion = 13,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
     ColourReputations = true,
-    MaxCharacters = 12,
+    MaxCharacters = 8,
     MaxExpansions = 3,
     ShowCharactersFromServerOption = 0,
     GroupCharactersByServerOption = 0,
@@ -140,85 +144,115 @@ local defaultDB = {
   Toons = {},
   Expansions = {
     [0] = {
+      Name = "Dragonflight",
+      Id = 10,
+      SupplyChestValue = 3500,
+      Show = true
+    },
+    [1] = {
       Name = "Shadowlands",
       Id = 9,
       SupplyChestValue = 3500,
       Show = true
     },
-    [1] = {
+    [2] = {
       Name = "Battle for Azeroth",
       Id = 8,
       SupplyChestValue = 4000,
-      Show = true
+      Show = false
     },
-    [2] = {
+    [3] = {
       Name = "Legion",
       Id = 7,
       SupplyChestValue = 750,
       Show = true
     },
-    [3] = {
+    [4] = {
       Name = "Warlords of Draenor",
       Id = 6,
       Show = false
     },
-    [4] = {
+    [5] = {
       Name = "Mists of Pandaria",
       Id = 5,
       Show = false
     },
-    [5] = {
+    [6] = {
       Name = "Cataclysm",
       Id = 4,
       Show = false
     },
-    [6] = {
+    [7] = {
       Name = "Wrath of the Lich King",
       Id = 3,
       Show = false
     },
-    [7] = {
+    [8] = {
       Name = "The Burning Crusade",
       Id = 2,
       Show = false
     },
-    [8] = {
+    [9] = {
       Name = "Vanilla",
       Id = 1,
       Show = false
     },
-    [9] = {
+    [10] = {
       Name = "Vanilla - Steamwheedle Cartel",
       Id = 1.1,
       Show = false
     },
-    [10] = {
+    [11] = {
       Name = "Vanilla - Alliance",
       Id = 1.2,
       Show = false
     },
-    [11] = {
+    [12] = {
       Name = "Vanilla - Horde",
       Id = 1.3,
       Show = false
     },
-    [12] = {
+    [13] = {
       Name = "Vanilla - Alliance Forces",
       Id = 1.4,
       Show = false
     },
-    [13] = {
+    [14] = {
       Name = "Vanilla - Horde Forces",
       Id = 1.5,
       Show = false
     },
-    [14] = {
+    [15] = {
       Name = "Other",
       Id = 0,
       Show = false
     }
   },
   Factions = {
+    [2503] = {
+      Name = "Maruuk Centaur",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
+    [2507] = {
+      Name = "Dragonscale Expedition",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
+    [2510] = {
+      Name = "Valdrakken Accord",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
+    [2511] = {
+      Name = "Iskaara Tuskarr",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
     [2478] = {
       Name = "The Enlightened",
         Show = true,
@@ -1209,6 +1243,12 @@ function core:OnInitialize()
     core:ResetFactionColours(AltRepsDB)
     AltRepsDB.DBVersion = 12
   end
+  if AltRepsDB.DBVersion <= 13 then
+    AltRepsDB.Expansions = defaultDB.Expansions
+    AltRepsDB.Factions = defaultDB.Factions
+    AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
+    AltRepsDB.DBVersion = 13
+  end
 
   core.db = AltRepsDB
   
@@ -1248,6 +1288,9 @@ function core:OnEnable()
   self:RegisterEvent("PLAYER_ENTERING_WORLD", function() core:UpdateReps() end)
   self:RegisterEvent("UPDATE_FACTION", function() core:UpdateReps() end)
   self:RegisterEvent("QUEST_TURNED_IN", function() core:UpdateReps() end)
+  self:RegisterEvent("MAJOR_FACTION_UNLOCKED", function() core:UpdateReps() end)
+  self:RegisterEvent("MAJOR_FACTION_RENOWN_LEVEL_CHANGED", function() core:UpdateReps() end)
+  self:RegisterEvent("MAJOR_FACTION_RENOWN_CATCH_UP_STATE_UPDATE", function() core:UpdateReps() end)
 end
 
 function core:OnDisable()
@@ -1624,7 +1667,9 @@ function core:GetTooltip(frame)
               local color
               local value, threshold = 0, 0
               if rep then
-                if rep.FriendTextLevel ~= nil then
+                if rep.RenownLevel ~= nil then
+                  dataFrame.Progress.Value.standing = rep.RenownLevel
+                elseif rep.FriendTextLevel ~= nil then
                   dataFrame.Progress.Value.standing = rep.FriendTextLevel
                 elseif rep.ParagonValue then
                   dataFrame.Progress.Value.standing = "Paragon"
@@ -1635,6 +1680,8 @@ function core:GetTooltip(frame)
                 
                 if rep.ParagonValue then
                   color = core.db.Options.StandingColours[9]
+                elseif rep.RenownLevel then
+                  color = core.db.Options.StandingColours[5]
                 elseif rep.FriendTextLevel then
                   color = core.db.Options.StandingColours[5]
                 else
@@ -1678,8 +1725,8 @@ function core:GetTooltip(frame)
   local expansionCount = tableLengthWithShow(core.db.Expansions)
   local showVerticalScroll = expansionCount > core.db.Options.MaxExpansions
 
-  if showHorizontalScroll then adjustWidth = 10 end
-  if showVerticalScroll then adjustHeight = 30 end
+  if showHorizontalScroll then adjustHeight = 30 end
+  if showVerticalScroll then adjustWidth = 10 end
     
   frame:SetSize(baseWidth + adjustWidth, baseHeight + adjustHeight)
   
@@ -1797,12 +1844,22 @@ function core:UpdateReps()
     local name, description, standingID, barMin, barMax, barValue, atWarWith, canToggleAtWar, isHeader, isCollapsed, hasRep, isWatched, isChild, factionID, hasBonusRepGain, canBeLFGBonus = GetFactionInfoByID(factionId)
     local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation_GetFactionParagonInfo(factionId)
     local friendID, friendRep, friendMaxRep, friendName, friendText, friendTexture, friendTextLevel, friendThreshold, nextFriendThreshold = C_GossipInfo_GetFriendshipReputation(factionId)
+    local majorFactionData = C_MajorFactions_GetMajorFactionData(factionId)
+    
+    if majorFactionData == nil then
+      majorFactionData = {} 
+    end
+
     if not toon.Reps then toon.Reps = {} end
     if not (atWarWith and not canToggleAtWar) and name then
-      local current, max = 0, 0
-      if standingID == 8 then 
+      local current, max, maxRenown = 0, 0, nil
+      if standingID == 8 then
         current = 21000
         max = 21000
+      elseif majorFactionData.isUnlocked then
+        current = C_MajorFactions_HasMaximumRenown(factionId) and majorFactionData.renownLevelThreshold or majorFactionData.renownReputationEarned;
+        max = majorFactionData.renownLevelThreshold
+        maxRenown = #C_MajorFactions_GetRenownLevels(factionId)
       else
         current = barValue - barMin
         max = barMax - barMin
@@ -1816,6 +1873,8 @@ function core:UpdateReps()
         ParagonThreshold = threshold,
         FriendTextLevel = friendTextLevel,
         FriendText = friendText,
+        RenownLevel = majorFactionData.renownLevel,
+        MaxRenown = maxRenown,
       }
     end
   end
@@ -2335,7 +2394,10 @@ function ShowToonFactionTooltip(parent, arg, ...)
   local standingLine = miniTooltip:AddLine()
   
   if rep then
-    if rep.FriendTextLevel ~= nil then
+    if rep.RenownLevel ~= nil then
+      miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Renown: " .. FONTEND)
+      miniTooltip:SetCell(standingLine, 2, rep.RenownLevel .. " / " .. rep.MaxRenown)
+    elseif rep.FriendTextLevel ~= nil then
       miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
       miniTooltip:SetCell(standingLine, 2, rep.FriendTextLevel)
       miniTooltip:SetCell(miniTooltip:AddLine(), 1, rep.FriendText, 2)
@@ -2370,6 +2432,22 @@ function ShowToonFactionTooltip(parent, arg, ...)
         miniTooltip:SetCell(suppliesAvailableLine, 2, "|T" .. READY_CHECK_READY_TEXTURE .. ":0|t")
       end
     end
+
+    if rep.RenownLevel then
+      if rep.RenownLevel ~= rep.MaxRenown then
+        local rewards = C_MajorFactions_GetRenownRewardsForLevel(factionId, rep.RenownLevel + 1)
+        if rewards ~= nil then
+          miniTooltip:AddLine()
+          miniTooltip:SetCell(miniTooltip:AddLine(), 1, YELLOWFONT .. "Next renown rewards: " .. FONTEND)
+          for _, reward in pairs(rewards) do
+            local rewardLine = miniTooltip:AddLine()
+            miniTooltip:SetCell(rewardLine, 1, string.format("|T%d:0|t", reward.icon))
+            miniTooltip:SetCell(rewardLine, 2, reward.name)
+          end
+        end
+      end
+    end
+
   else 
     miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
     miniTooltip:SetCell(standingLine, 2, "Unknown")

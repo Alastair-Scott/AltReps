@@ -1,3 +1,9 @@
+### Changes: V4.1.0
+
+- Added DF major factions
+- Added support for new major factions with renown
+- Added upcoming renown rewards to tooltip
+
 ### Changes: V4.0.0
 
 - Updated to DF
