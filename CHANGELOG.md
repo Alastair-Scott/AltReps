@@ -1,3 +1,10 @@
+### Changes: V4.1.1
+
+- Updated game version
+- Added Winterpelt Furbolg & Loamm Niffen
+- Fixed issue with major faction tooltips when at 0 renown
+- Fixed issue when sorting by a major faction
+
 ### Changes: V4.1.0
 
 - Added DF major factions

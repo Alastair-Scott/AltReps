@@ -79,7 +79,7 @@ local standingColours = {
 }
 
 local defaultDB = {
-  DBVersion = 13,
+  DBVersion = 14,
   MinimapIcon = { hide = false },
   Window = {},
   Options = {
@@ -229,6 +229,18 @@ local defaultDB = {
     }
   },
   Factions = {
+    [2564] = {
+      Name = "Loamm Niffen",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
+    [2526] = {
+      Name = "Winterpelt Furbolg",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+    },
     [2503] = {
       Name = "Maruuk Centaur",
         Show = true,
@@ -1249,6 +1261,21 @@ function core:OnInitialize()
     AltRepsDB.Options.MaxCharacters = defaultDB.Options.MaxCharacters
     AltRepsDB.DBVersion = 13
   end
+  if AltRepsDB.DBVersion < 14 then
+      AltRepsDB.Factions[2564] = {
+        Name = "Loamm Niffen",
+        Show = true,
+        ExpansionId = 10,
+        For = "Alliance;Horde"
+      }
+      AltRepsDB.Factions[2526] = {
+        Name = "Winterpelt Furbolg",
+          Show = true,
+          ExpansionId = 10,
+          For = "Alliance;Horde"
+      }
+      AltRepsDB.DBVersion = 14
+    end
 
   core.db = AltRepsDB
   
@@ -2396,7 +2423,7 @@ function ShowToonFactionTooltip(parent, arg, ...)
   if rep then
     if rep.RenownLevel ~= nil then
       miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Renown: " .. FONTEND)
-      miniTooltip:SetCell(standingLine, 2, rep.RenownLevel .. " / " .. rep.MaxRenown)
+      miniTooltip:SetCell(standingLine, 2, rep.RenownLevel .. " / " .. (rep.MaxRenown or "0"))
     elseif rep.FriendTextLevel ~= nil then
       miniTooltip:SetCell(standingLine, 1, YELLOWFONT .. "Standing: " .. FONTEND)
       miniTooltip:SetCell(standingLine, 2, rep.FriendTextLevel)
@@ -2607,19 +2634,29 @@ function factionSort(characterKey1, characterKey2)
   factionRep1 = toon1.Reps[factionIdForOrdering] 
   factionRep2 = toon2.Reps[factionIdForOrdering] 
 
-  if factionRep1 ~= nil and factionRep2 ~= nil then 
-    if factionRep1.Standing > factionRep2.Standing then
-      return true
-    elseif factionRep2.Standing > factionRep1.Standing then
-      return false
-    else
-      if factionRep1.Current > factionRep2.Current then
+  if factionRep1 ~= nil and factionRep2 ~= nil then
+    if factionRep1.RenownLevel ~= nil or factionRep2.RenownLevel ~= nil then
+      if (factionRep1.RenownLevel or 0) > (factionRep2.RenownLevel or 0) then
         return true
-      elseif factionRep2.Current > factionRep1.Current then
+      elseif (factionRep2.RenownLevel or 0) > (factionRep1.RenownLevel or 0) then
+        return false
+      elseif (factionRep1.Current or 0) > (factionRep2.Current or 0) then
+          return true
+      end
+    else
+      if factionRep1.Standing > factionRep2.Standing then
+        return true
+      elseif factionRep2.Standing > factionRep1.Standing then
         return false
       else
-        if factionRep1.ParagonValue and factionRep2.ParagonValue then
-          return mod(factionRep1.ParagonValue, factionRep1.ParagonThreshold)  > mod(factionRep2.ParagonValue, factionRep2.ParagonThreshold) 
+        if factionRep1.Current > factionRep2.Current then
+          return true
+        elseif factionRep2.Current > factionRep1.Current then
+          return false
+        else
+          if factionRep1.ParagonValue and factionRep2.ParagonValue then
+            return mod(factionRep1.ParagonValue, factionRep1.ParagonThreshold)  > mod(factionRep2.ParagonValue, factionRep2.ParagonThreshold) 
+          end
         end
       end
     end
