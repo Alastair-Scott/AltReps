@@ -1,5 +1,5 @@
-## Interface: 100100
-## X-Min-Interface: 100100
+## Interface: 100200
+## X-Min-Interface: 100200
 ## Title: AltReps
 ## Notes: Tracks Reputations for all your characters
 ## Author: Eylwen

@@ -229,6 +229,12 @@ local defaultDB = {
     }
   },
   Factions = {
+    [2574] = {
+      Name = "Dream Wardens",
+      Show = true,
+      ExpansionId = 10,
+      For = "Alliance;Horde"
+    },
     [2564] = {
       Name = "Loamm Niffen",
         Show = true,
@@ -1262,20 +1268,29 @@ function core:OnInitialize()
     AltRepsDB.DBVersion = 13
   end
   if AltRepsDB.DBVersion < 14 then
-      AltRepsDB.Factions[2564] = {
-        Name = "Loamm Niffen",
+    AltRepsDB.Factions[2564] = {
+      Name = "Loamm Niffen",
+      Show = true,
+      ExpansionId = 10,
+      For = "Alliance;Horde"
+    }
+    AltRepsDB.Factions[2526] = {
+      Name = "Winterpelt Furbolg",
         Show = true,
         ExpansionId = 10,
         For = "Alliance;Horde"
-      }
-      AltRepsDB.Factions[2526] = {
-        Name = "Winterpelt Furbolg",
-          Show = true,
-          ExpansionId = 10,
-          For = "Alliance;Horde"
-      }
-      AltRepsDB.DBVersion = 14
-    end
+    }
+    AltRepsDB.DBVersion = 14
+  end
+  if AltRepsDB.DBVersion < 15 then
+    AltRepsDB.Factions[2574] = {
+      Name = "Dream Wardens",
+      Show = true,
+      ExpansionId = 10,
+      For = "Alliance;Horde"
+    }
+    AltRepsDB.DBVersion = 15
+  end
 
   core.db = AltRepsDB
   

@@ -1,3 +1,8 @@
+### Changes: V4.1.2
+
+- Updated game version
+- Added Dream Wardens
+
 ### Changes: V4.1.1
 
 - Updated game version
